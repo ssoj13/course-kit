@@ -102,6 +102,8 @@ export function defineCourse(o) {
 				},
 				routeMiddleware: own('./lib/route-links.ts'),
 				lastUpdated: true,
+				// Lessons explain code line by line; wrapped lines read better than a horizontal scrollbar.
+				expressiveCode: { defaultProps: { wrap: true } },
 				sidebar: [
 					{ label: 'Home', link: '/' },
 					{ label: 'Course roadmap', link: '/roadmap/' },
