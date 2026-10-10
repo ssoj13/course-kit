@@ -1,0 +1,12 @@
+---
+title: Lesson one
+---
+import MindMap from 'course-kit/components/MindMap.astro';
+import Term from 'course-kit/components/Term.astro';
+import Quiz from 'course-kit/components/Quiz.astro';
+
+Next is [lesson two](lesson:two), the [roadmap](page:roadmap), the term [alpha](term:alpha) and <Term id="beta" />.
+
+<MindMap />
+
+<Quiz questions={[{ q: 'Alpha is built on?', options: ['Beta', 'Gamma', 'Delta', 'Nothing'], answer: 0, explain: 'See the map.' }]} />

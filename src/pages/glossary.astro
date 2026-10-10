@@ -1,0 +1,81 @@
+---
+/**
+ * Glossary generated from terms.json: every term with its definition, depth layer, what it is built on and the
+ * lesson that teaches it. `term:<id>` links and <Term> point at the `#term-<id>` anchors here.
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { graph } from '../lib/terms';
+import { parents, sortedTerms } from '../lib/graph';
+import { href, lessonBySlug } from '../lib/course';
+import { termAnchor } from '../links.mjs';
+
+const entries = sortedTerms(graph).map((t) => ({
+	t,
+	layer: graph.layers[graph.layerIndex.get(t.layer) ?? 0]?.label ?? t.layer,
+	lesson: t.lesson ? lessonBySlug(t.lesson) : undefined,
+	parents: parents(graph, t.id),
+}));
+---
+
+<StarlightPage frontmatter={{ title: 'Glossary', description: 'Every term of the course, what it is and what it is built on.', editUrl: false }}>
+	<dl class="ck-glossary">
+		{
+			entries.map(({ t, layer, lesson, parents }) => (
+				<>
+					<dt id={termAnchor(t.id)}>
+						{t.label} <span class="ck-layer">{layer}</span>
+					</dt>
+					<dd>
+						<p>{t.def}</p>
+						{t.aka?.length ? <p class="ck-meta">Also called: {t.aka.join(', ')}</p> : null}
+						{parents.length > 0 && (
+							<p class="ck-meta">
+								{parents.map((p, i) => (
+									<>
+										{i > 0 && '; '}
+										{p.edge.label ?? p.edge.type.replace('-', ' ')} <a href={`#${termAnchor(p.term.id)}`}>{p.term.label}</a>
+									</>
+								))}
+							</p>
+						)}
+						{lesson && (
+							<p class="ck-meta">
+								Taught in <a href={href(lesson.slug)}>lesson {lesson.num}: {lesson.title}</a>
+							</p>
+						)}
+					</dd>
+				</>
+			))
+		}
+	</dl>
+</StarlightPage>
+
+<style>
+	.ck-glossary dt {
+		margin-top: 1.25rem;
+		font-weight: 700;
+		color: var(--sl-color-white);
+		scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+	}
+	.ck-glossary dt:target {
+		color: var(--sl-color-accent-high);
+	}
+	.ck-glossary dd {
+		margin: 0.25rem 0 0;
+	}
+	.ck-glossary dd p {
+		margin: 0.15rem 0;
+	}
+	.ck-layer {
+		font-size: var(--sl-text-xs);
+		font-weight: 400;
+		padding: 0.05rem 0.45rem;
+		border: 1px solid var(--sl-color-gray-4);
+		border-radius: 1rem;
+		color: var(--sl-color-gray-2);
+	}
+	.ck-meta {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+</style>

@@ -1,0 +1,91 @@
+---
+/**
+ * Course map: one table per module (global lesson number, linked title, summary), generated from course.json so
+ * no page keeps a hand-maintained lesson list. Used by the roadmap (all modules) and by the module overview pages
+ * (`module` = one module slug). Tables show the full lesson title; the short label is for compact navigation only.
+ */
+import { href, moduleHref, modules } from '../lib/course';
+
+interface Props {
+	/** Render only this module (slug); omit for the whole course. */
+	module?: string;
+}
+
+const { module } = Astro.props;
+const shown = module ? modules.filter((m) => m.slug === module) : modules;
+if (module && !shown.length) throw new Error(`CourseMap: course.json has no module "${module}"`);
+---
+
+{
+	shown.map((m) => (
+		<section class="course-map not-content">
+			{!module && (
+				<h3>
+					<a href={moduleHref(m.slug)}>
+						{m.num}. {m.title}
+						{m.optional && ' (optional)'}
+					</a>
+				</h3>
+			)}
+			{!module && <p class="module-summary">{m.summary}</p>}
+			<table>
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Lesson</th>
+						<th>What it covers</th>
+					</tr>
+				</thead>
+				<tbody>
+					{m.lessons.map((l) => (
+						<tr>
+							<td>{l.num}</td>
+							<td>
+								<a href={href(l.slug)}>{l.title}</a>
+							</td>
+							<td>{l.summary}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</section>
+	))
+}
+
+<style>
+	.course-map {
+		margin-top: 1.5rem;
+		overflow-x: auto; /* keep the page itself free of horizontal scroll at 360px */
+	}
+	.course-map h3 {
+		margin: 0;
+		font-size: var(--sl-text-h4);
+	}
+	.course-map h3 a {
+		color: var(--sl-color-white);
+		text-decoration: none;
+	}
+	.course-map h3 a:hover {
+		text-decoration: underline;
+	}
+	.module-summary {
+		margin: 0.25rem 0 0.5rem;
+		color: var(--sl-color-gray-2);
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--sl-text-sm);
+	}
+	th,
+	td {
+		padding: 0.4rem 0.6rem;
+		border: 1px solid var(--sl-color-gray-5);
+		text-align: start;
+		vertical-align: top;
+	}
+	th:first-child,
+	td:first-child {
+		width: 2.5rem;
+	}
+</style>

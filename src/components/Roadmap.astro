@@ -1,0 +1,81 @@
+---
+/**
+ * Course roadmap graph (roadmap.sh style) from course.json: a vertical spine of modules, each module's lessons
+ * split to both sides. The layout is a fixed grid computed here (no ELK needed: the structure is a tree of
+ * depth 2), so the same course always draws the same picture. A text version follows for readers without JS.
+ */
+import RoadmapView, { type RoadEdge, type RoadNode } from './graph/RoadmapView.tsx';
+import { href, moduleHref, modules } from '../lib/course';
+
+const MOD_W = 280;
+const LES_W = 250;
+const H = 40;
+const ROW = 50;
+const GAP_X = 50;
+const GAP_Y = 46;
+
+const nodes: RoadNode[] = [];
+const edges: RoadEdge[] = [];
+let y = 0;
+for (const m of modules) {
+	const left = m.lessons.slice(0, Math.ceil(m.lessons.length / 2));
+	const right = m.lessons.slice(left.length);
+	const id = `m:${m.slug}`;
+	nodes.push({
+		id,
+		kind: 'module',
+		label: `${m.num}. ${m.title}`,
+		href: moduleHref(m.slug),
+		slug: '',
+		lessons: m.lessons.map((l) => l.slug),
+		side: 'center',
+		optional: m.optional,
+		x: -MOD_W / 2,
+		y,
+		w: MOD_W,
+		h: H + 8,
+	});
+	const place = (ls: typeof left, side: 'left' | 'right') =>
+		ls.forEach((l, i) => {
+			nodes.push({
+				id: `l:${l.slug}`,
+				kind: 'lesson',
+				label: `${l.num}. ${l.label}`,
+				href: href(l.slug),
+				slug: l.slug,
+				lessons: [],
+				side,
+				optional: l.optional,
+				x: side === 'left' ? -MOD_W / 2 - GAP_X - LES_W : MOD_W / 2 + GAP_X,
+				y: y + i * ROW,
+				w: LES_W,
+				h: H,
+			});
+			edges.push({ from: id, to: `l:${l.slug}`, spine: false });
+		});
+	place(left, 'left');
+	place(right, 'right');
+	const prev = nodes.findLast((n) => n.kind === 'module' && n.id !== id);
+	if (prev) edges.push({ from: prev.id, to: id, spine: true });
+	y += Math.max(left.length, 1) * ROW + GAP_Y;
+}
+const height = Math.min(900, Math.max(360, Math.round(y * 0.75)));
+---
+
+<figure class="ck-roadmap not-content">
+	<div style={`min-height:${height + 2}px`}>
+		<RoadmapView client:only="react" nodes={nodes} edges={edges} height={height} />
+	</div>
+	<figcaption>Modules run top to bottom; lessons branch off each module. Completed lessons turn green.</figcaption>
+</figure>
+
+<style>
+	.ck-roadmap {
+		margin: 1.5rem 0;
+	}
+	figcaption {
+		margin-top: 0.4rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+</style>

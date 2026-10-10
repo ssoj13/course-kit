@@ -1,0 +1,173 @@
+/*
+ * Term graph look. Layer colors are the depth stack's palette: index 0 = most abstract layer, the last = hardware.
+ * Colors come from Starlight tokens where possible so both themes work; layer hues are fixed mid-tones
+ * readable on light and dark backgrounds.
+ */
+.ck-graph {
+	--ck-l0: #4f8ff7;
+	--ck-l1: #3fb27f;
+	--ck-l2: #e5a33b;
+	--ck-l3: #d9644a;
+	--ck-l4: #9c6ade;
+	--ck-l5: #7a8699;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.6rem;
+	background: var(--sl-color-gray-6);
+	overflow: hidden;
+}
+.ck-graph-canvas {
+	position: relative;
+	width: 100%;
+	/* xyflow colors follow the Starlight theme. */
+	--xy-background-color: transparent;
+	--xy-edge-stroke: var(--sl-color-gray-2);
+	--xy-edge-label-background-color: var(--sl-color-gray-6);
+	--xy-edge-label-color: var(--sl-color-gray-2);
+	--xy-controls-button-background-color: var(--sl-color-black);
+	--xy-controls-button-color: var(--sl-color-white);
+	--xy-controls-button-border-color: var(--sl-color-gray-5);
+}
+.ck-node {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	padding: 0 0.6rem;
+	border: 2px solid var(--ck-c);
+	border-left-width: 6px;
+	border-radius: 0.45rem;
+	background: var(--sl-color-black);
+	color: var(--sl-color-white);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.ck-node span {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.ck-node.is-focus {
+	background: color-mix(in srgb, var(--ck-c) 28%, var(--sl-color-black));
+}
+.ck-node.is-selected {
+	outline: 3px solid var(--sl-color-accent);
+	outline-offset: 2px;
+}
+.ck-node .react-flow__handle {
+	opacity: 0;
+}
+.ck-layer-0 { --ck-c: var(--ck-l0); }
+.ck-layer-1 { --ck-c: var(--ck-l1); }
+.ck-layer-2 { --ck-c: var(--ck-l2); }
+.ck-layer-3 { --ck-c: var(--ck-l3); }
+.ck-layer-4 { --ck-c: var(--ck-l4); }
+.ck-layer-5 { --ck-c: var(--ck-l5); }
+
+.ck-edge.is-muted path {
+	opacity: 0.55;
+}
+
+.ck-graph-info {
+	border-top: 1px solid var(--sl-color-gray-5);
+	padding: 0.6rem 0.9rem;
+	font-size: var(--sl-text-sm);
+	min-height: 4.2rem;
+}
+.ck-graph-info p {
+	margin: 0 0 0.3rem;
+}
+.ck-graph-title b {
+	color: var(--sl-color-white);
+}
+.ck-badge {
+	font-size: var(--sl-text-xs);
+	padding: 0.05rem 0.4rem;
+	border: 1px solid var(--sl-color-gray-4);
+	border-radius: 1rem;
+	color: var(--sl-color-gray-2);
+}
+.ck-muted {
+	color: var(--sl-color-gray-3);
+}
+.ck-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem 1rem;
+	list-style: none;
+	margin: 0;
+	padding: 0.5rem 0.9rem 0.7rem;
+	border-top: 1px solid var(--sl-color-gray-5);
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-2);
+}
+.ck-legend li {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin: 0;
+}
+.ck-legend line {
+	stroke: var(--sl-color-gray-2);
+	stroke-width: 2;
+}
+.ck-swatch {
+	display: inline-block;
+	width: 0.8rem;
+	height: 0.8rem;
+	border-radius: 0.2rem;
+	background: var(--ck-c);
+}
+
+/* Roadmap (RoadmapView): modules on the spine, lessons on both sides. */
+.ck-road {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	box-sizing: border-box;
+	padding: 0 0.75rem;
+	border: 2px solid var(--sl-color-gray-4);
+	border-radius: 0.45rem;
+	background: var(--sl-color-black);
+	color: var(--sl-color-white);
+	font-size: 13px;
+	text-decoration: none;
+}
+.ck-road span {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.ck-road:hover {
+	border-color: var(--sl-color-accent);
+}
+.ck-road-module {
+	border-color: var(--sl-color-accent);
+	background: color-mix(in srgb, var(--sl-color-accent) 22%, var(--sl-color-black));
+	font-size: 14px;
+	font-weight: 700;
+}
+.ck-road-module small {
+	font-weight: 400;
+	color: var(--sl-color-gray-2);
+}
+.ck-road.is-done {
+	border-color: var(--sl-color-green);
+}
+.ck-road b {
+	color: var(--sl-color-green);
+}
+.ck-road.is-optional {
+	border-style: dashed;
+}
+.ck-road .react-flow__handle {
+	opacity: 0;
+}
+.ck-spine path {
+	stroke: var(--sl-color-accent);
+	stroke-width: 3;
+}
+.ck-branch path {
+	stroke-dasharray: 5 4;
+}

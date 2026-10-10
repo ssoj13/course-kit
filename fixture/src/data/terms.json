@@ -1,0 +1,13 @@
+{
+  "layers": [{ "id": "concept", "label": "Concept" }, { "id": "machine", "label": "Machine" }],
+  "terms": [
+    { "id": "alpha", "label": "Alpha", "layer": "concept", "lesson": "one", "def": "Alpha is built on beta." },
+    { "id": "beta", "label": "Beta", "layer": "machine", "lesson": "one", "def": "Beta is a root." },
+    { "id": "gamma", "label": "Gamma", "layer": "concept", "lesson": "two", "def": "Gamma is a kind of alpha.", "aka": ["G"] }
+  ],
+  "edges": [
+    { "from": "alpha", "to": "beta", "type": "built-on", "label": "needs" },
+    { "from": "gamma", "to": "alpha", "type": "is-a" },
+    { "from": "gamma", "to": "beta", "type": "related" }
+  ]
+}

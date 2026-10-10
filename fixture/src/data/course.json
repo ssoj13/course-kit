@@ -1,0 +1,16 @@
+{
+  "id": "fixture",
+  "title": "Fixture Course",
+  "description": "Engine test course.",
+  "modules": [
+    {
+      "slug": "basics",
+      "title": "Basics",
+      "summary": "Two lessons that exercise every engine feature.",
+      "lessons": [
+        { "slug": "one", "title": "Lesson one", "summary": "Links, terms, quiz and the lesson map." },
+        { "slug": "two", "title": "Lesson two with a long title", "short": "Lesson two", "summary": "Genealogy map." }
+      ]
+    }
+  ]
+}

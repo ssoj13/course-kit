@@ -1,0 +1,25 @@
+---
+/**
+ * Inline term reference: `<Term id="vk-instance" />` or `<Term id="vk-instance">instances</Term>`.
+ * Links to the glossary entry and shows the one-line definition on hover/focus. An unknown id fails the build.
+ */
+import { graph } from '../lib/terms';
+import { term } from '../lib/graph';
+import { resolveLink } from '../lib/course';
+
+interface Props {
+	id: string;
+}
+
+const t = term(graph, Astro.props.id);
+const url = resolveLink(`term:${t.id}`)!;
+---
+
+<a class="ck-term" href={url} title={t.def}><slot>{t.label}</slot></a>
+
+<style>
+	.ck-term {
+		text-decoration: underline dotted;
+		text-underline-offset: 0.2em;
+	}
+</style>

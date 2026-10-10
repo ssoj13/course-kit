@@ -1,0 +1,49 @@
+{
+  "name": "course-kit",
+  "version": "0.1.0",
+  "description": "Engine for interactive Starlight textbooks: course manifest, progress, quizzes, term graph and mind maps.",
+  "type": "module",
+  "keywords": ["astro-component", "withastro", "starlight"],
+  "exports": {
+    ".": "./src/index.mjs",
+    "./data.mjs": "./src/data.mjs",
+    "./links.mjs": "./src/links.mjs",
+    "./lib/*": "./src/lib/*",
+    "./components/*": "./src/components/*",
+    "./pages/*": "./src/pages/*",
+    "./styles/*": "./src/styles/*"
+  },
+  "files": ["src"],
+  "scripts": {
+    "test": "bun test tests",
+    "fixture:build": "astro build --root fixture",
+    "fixture:dev": "astro dev --root fixture",
+    "check": "astro-check --root ."
+  },
+  "peerDependencies": {
+    "@astrojs/markdown-satteri": "^0.4.3",
+    "@astrojs/react": "^7.0.1",
+    "@astrojs/starlight": "^0.42.6",
+    "astro": "^7.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.1.1",
+    "@xyflow/react": "^12.12.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/markdown-satteri": "^0.4.3",
+    "@astrojs/react": "^7.0.1",
+    "@astrojs/starlight": "^0.42.6",
+    "@types/bun": "^1.4.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "astro": "^7.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sharp": "^0.35.5",
+    "typescript": "~6.0.3"
+  }
+}

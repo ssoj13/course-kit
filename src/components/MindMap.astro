@@ -1,0 +1,111 @@
+---
+/**
+ * Mind map of the term graph. Selects a subgraph (lib/graph.ts), lays it out at build time (lib/layout.ts) and
+ * hands the finished picture to the GraphView island. The same subgraph is printed as a text list, readable
+ * without JS and by screen readers.
+ *
+ * Usage in MDX:
+ *   <MindMap />                              current lesson's terms and their neighbors
+ *   <MindMap lesson="instance" />            another lesson's map
+ *   <MindMap term="device" />                one hop around a term (`hops` widens it)
+ *   <MindMap term="device" mode="genealogy" /> what the term is built on, down to the roots
+ *   <MindMap term="instance" mode="unlocks" /> everything built on the term
+ *   <MindMap mode="all" />                   the whole graph
+ */
+import GraphView, { EDGE_STYLE, type ViewEdge, type ViewNode } from './graph/GraphView.tsx';
+import { ancestors, descendants, everything, lessonMap, neighborhood, type EdgeType, type SubGraph } from '../lib/graph';
+import { graph } from '../lib/terms';
+import { layout } from '../lib/layout';
+import { href, lessonByPath, lessonBySlug, resolveLink } from '../lib/course';
+import { EDGE_TYPES } from '../data.mjs';
+
+interface Props {
+	term?: string;
+	lesson?: string;
+	mode?: 'around' | 'genealogy' | 'unlocks' | 'all';
+	hops?: number;
+	/** Caption under the map. */
+	caption?: string;
+}
+
+const { term, mode = 'around', hops = 1, caption } = Astro.props;
+const lesson = Astro.props.lesson ?? (term || mode === 'all' ? undefined : lessonByPath(Astro.locals.starlightRoute?.id ?? '')?.slug);
+
+let sub: SubGraph;
+if (mode === 'all') sub = everything(graph);
+else if (term) sub = mode === 'genealogy' ? ancestors(graph, term) : mode === 'unlocks' ? descendants(graph, term) : neighborhood(graph, term, hops);
+else if (lesson) sub = lessonMap(graph, lesson);
+else throw new Error('<MindMap>: pass `term`, `lesson` or mode="all" (or use it on a lesson page)');
+
+const placed = new Map(layout(sub).nodes.map((n) => [n.id, n]));
+const layerLabel = (id: string) => graph.layers[graph.layerIndex.get(id) ?? 0]?.label ?? id;
+
+const nodes: ViewNode[] = sub.terms.map((t) => {
+	const p = placed.get(t.id)!;
+	const taught = t.lesson ? lessonBySlug(t.lesson) : undefined;
+	return {
+		id: t.id,
+		label: t.label,
+		def: t.def,
+		layer: graph.layerIndex.get(t.layer) ?? 0,
+		layerLabel: layerLabel(t.layer),
+		href: taught ? href(taught.slug) : resolveLink(`term:${t.id}`)!,
+		hrefLabel: taught ? `Lesson ${taught.num}: ${taught.title} →` : 'Glossary entry →',
+		x: p.x,
+		y: p.y,
+		w: p.w,
+		h: p.h,
+		focus: t.id === term || (!term && t.lesson === lesson),
+	};
+});
+const edges: ViewEdge[] = sub.edges.map((e) => ({ from: e.from, to: e.to, type: e.type, label: e.label }));
+const legend = EDGE_TYPES.filter((t: EdgeType) => edges.some((e) => e.type === t));
+// Colors follow the global layer index, so the legend keeps each used layer's index.
+const legendLayers = graph.layers.flatMap((l, index) => (sub.terms.some((t) => t.layer === l.id) ? [{ label: l.label, index }] : []));
+
+const byId = new Map(sub.terms.map((t) => [t.id, t.label]));
+const height = Math.min(620, Math.max(260, Math.max(...nodes.map((n) => n.y + n.h)) + 90));
+---
+
+<figure class="ck-mindmap not-content">
+	<div class="ck-mindmap-frame" style={`min-height:${height + 120}px`}>
+		<GraphView client:only="react" nodes={nodes} edges={edges} height={height} legend={legend} layers={legendLayers} />
+	</div>
+	{caption && <figcaption>{caption}</figcaption>}
+	<details class="ck-mindmap-text">
+		<summary>This map as text</summary>
+		<ul>
+			{sub.terms.map((t) => <li><b>{t.label}</b>: {t.def}</li>)}
+		</ul>
+		{
+			edges.length > 0 && (
+				<ul>
+					{edges.map((e) => (
+						<li>
+							{byId.get(e.from)} {e.label ?? EDGE_STYLE[e.type].text} {byId.get(e.to)}
+						</li>
+					))}
+				</ul>
+			)
+		}
+	</details>
+</figure>
+
+<style>
+	.ck-mindmap {
+		margin: 1.5rem 0;
+	}
+	figcaption {
+		margin-top: 0.4rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.ck-mindmap-text {
+		margin-top: 0.4rem;
+		font-size: var(--sl-text-sm);
+	}
+	.ck-mindmap-text summary {
+		cursor: pointer;
+		color: var(--sl-color-gray-3);
+	}
+</style>
