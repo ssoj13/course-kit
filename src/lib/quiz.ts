@@ -1,6 +1,6 @@
 /**
- * Self-check quiz rules: <Quiz> validates every question at build time (a broken quiz fails the build); the
- * "longest option" statistics are for a course-wide lint (TODO in AGENTS.md).
+ * Self-check quiz rules: <Quiz> validates every question at build time (a broken quiz fails the build), including
+ * the per-quiz limit on the "correct option is the longest" giveaway.
  */
 
 export interface Question {

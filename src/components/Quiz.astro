@@ -3,7 +3,7 @@
  * Self-check multiple choice. Markup is rendered at build time (so the page is readable
  * without JS); the `lab-quiz` element only grades answers and keeps the score.
  */
-import { questionErrors, type Question } from '../lib/quiz';
+import { correctIsLongest, giveawayLimit, questionErrors, type Question } from '../lib/quiz';
 
 interface Props {
 	questions: Question[];
@@ -20,6 +20,14 @@ questions.forEach((item, i) => {
 	const errs = questionErrors(item);
 	if (errs.length) throw new Error(`<Quiz> question ${i + 1} ("${String(item?.q).slice(0, 40)}"): ${errs.join('; ')}.`);
 });
+// "Pick the longest option" must not work: at most a third of a quiz may have the correct answer as the longest.
+const giveaways = questions.filter(correctIsLongest);
+if (giveaways.length > giveawayLimit(questions.length)) {
+	throw new Error(
+		`<Quiz>: ${giveaways.length}/${questions.length} questions have the correct option as the longest (limit ${giveawayLimit(questions.length)}): ` +
+			giveaways.map((q) => `"${q.q.slice(0, 50)}"`).join(', '),
+	);
+}
 
 // Deterministic id (djb2 of the content) keeps radio groups unique per quiz without
 // making every build emit different HTML.
