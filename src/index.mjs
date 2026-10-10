@@ -16,6 +16,7 @@ import { checkCourse, checkTerms } from './data.mjs';
 import { courseLinksPlugin, makeResolver } from './links.mjs';
 
 const VIRTUAL_ID = 'virtual:course-kit/data';
+const SERVER_ID = 'virtual:course-kit/server';
 const PKG = 'course-kit';
 
 /**
@@ -58,6 +59,8 @@ export function defineCourse(o) {
 	const terms = checkTerms(readJson(o.terms, 'terms.json'), course);
 	const resolve = makeResolver(course, terms, o.pages ?? {}, o.base);
 	const data = { course, terms, site: { base: o.base, repo: o.repo, pages: o.pages ?? {} } };
+	// Build-only values (filled in astro:config:setup). A separate module, so they can never reach a browser bundle.
+	const server = { root: '' };
 
 	let lessonNum = 0;
 	// One group per module: its generated overview page, then lessons with the GLOBAL lesson number and the
@@ -76,7 +79,7 @@ export function defineCourse(o) {
 		markdown: { processor: satteri({ mdastPlugins: [courseLinksPlugin(resolve)] }) },
 		vite: {
 			...o.vite,
-			plugins: [virtualData(data), ...(o.vite?.plugins ?? [])],
+			plugins: [virtualModule(VIRTUAL_ID, data), virtualModule(SERVER_ID, server), ...(o.vite?.plugins ?? [])],
 			// The engine ships TS and .astro sources; Vite must transform them instead of handing them to Node.
 			ssr: { ...o.vite?.ssr, noExternal: [PKG, ...toArray(o.vite?.ssr?.noExternal)] },
 			// One React for the page and every island, also when the engine is linked from a sibling checkout.
@@ -112,6 +115,7 @@ export function defineCourse(o) {
 					'astro:config:setup': ({ config, injectRoute, addWatchFile }) => {
 						addWatchFile(o.course);
 						addWatchFile(o.terms);
+						server.root = fileURLToPath(config.root);
 						checkLessonFiles(course, new URL('content/docs/', config.srcDir));
 						injectRoute({ pattern: '/[module]', entrypoint: own('./pages/module.astro') });
 						injectRoute({ pattern: '/roadmap', entrypoint: own('./pages/roadmap.astro') });
@@ -147,18 +151,22 @@ function toArray(v) {
 }
 
 /**
- * Vite plugin serving the validated manifests as `virtual:course-kit/data` (`course`, `terms`, `site`).
- * @param {unknown} data
+ * Vite plugin serving an object's fields as named exports of a virtual module. The code is generated on load,
+ * so fields filled in later config hooks are included.
+ * @param {string} id
+ * @param {Record<string, unknown>} values
  * @returns {import('vite').Plugin}
  */
-function virtualData(data) {
-	const resolved = `\0${VIRTUAL_ID}`;
-	const code = Object.entries(/** @type {Record<string, unknown>} */ (data))
-		.map(([k, v]) => `export const ${k} = ${JSON.stringify(v)};`)
-		.join('\n');
+function virtualModule(id, values) {
+	const resolved = `\0${id}`;
 	return {
-		name: 'course-kit:data',
-		resolveId: (id) => (id === VIRTUAL_ID ? resolved : undefined),
-		load: (id) => (id === resolved ? code : undefined),
+		name: `course-kit:${id}`,
+		resolveId: (x) => (x === id ? resolved : undefined),
+		load: (x) =>
+			x === resolved
+				? Object.entries(values)
+						.map(([k, v]) => `export const ${k} = ${JSON.stringify(v)};`)
+						.join('\n')
+				: undefined,
 	};
 }

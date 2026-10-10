@@ -20,7 +20,9 @@ export default defineCourse({ site, base, repo, course: new URL('./src/data/cour
 ```
 `package.json`: `"course-kit": "github:ssoj13/course-kit#vX.Y.Z"` plus the peers (astro, @astrojs/starlight,
 @astrojs/react, @astrojs/markdown-satteri, react, react-dom). Lessons live at `src/content/docs/<module>/<lesson>.mdx`.
-Components: `course-kit/components/{MindMap,Term,Quiz,CourseMap,ProgressExport}.astro`.
+Components: `course-kit/components/{MindMap,Term,Quiz,CourseMap,ProgressExport,Snippet,CodeTabs}.astro`.
+Code in lessons comes from real files: `<Snippet src="examples/x.rs#region" />`, `<CodeTabs items={{ Rust: '...#r', 'C++': '...#r' }} />`;
+sources mark regions with `// #region name` ... `// #endregion` (any line-comment syntax; markers never shown).
 Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course pages>`, `term:<id>`.
 
 ## Layout
@@ -30,7 +32,9 @@ Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course page
 - `src/data.mjs` — manifest types (JSDoc) and validation; `src/links.mjs` — course link resolver + Markdown plugin.
 - `src/lib/` (TS, Vite side): `course.ts` (numbering/URLs), `graph.ts` (pure term-graph queries), `terms.ts`
   (binds graph.ts to the course), `layout.ts` (dagre, build time), `store.ts`, `progress.ts`, `element.ts`
-  (custom-element base), `ui.ts`, `quiz.ts`, `route-links.ts` (Starlight middleware).
+  (custom-element base), `ui.ts`, `quiz.ts`, `route-links.ts` (Starlight middleware), `regions.ts` (pure region
+  extraction), `snippets.ts` (build-time file reads via `virtual:course-kit/server`, which holds the project root and
+  is kept separate from `virtual:course-kit/data` so local paths never reach a browser bundle).
 - `src/components/` — Astro components; `graph/GraphView.tsx` and `graph/RoadmapView.tsx` are React islands
   (@xyflow/react) rendered with `client:only="react"` plus a text fallback.
 - `src/pages/` — generated pages. `src/styles/lab.css` — widget design tokens/primitives.

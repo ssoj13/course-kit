@@ -4,3 +4,10 @@ title: Lesson two with a long title
 import MindMap from 'course-kit/components/MindMap.astro';
 
 <MindMap term="gamma" mode="genealogy" caption="Gamma down to its roots." />
+
+import CodeTabs from 'course-kit/components/CodeTabs.astro';
+import Snippet from 'course-kit/components/Snippet.astro';
+
+<CodeTabs items={{ Rust: 'examples/demo.rs#greet', 'C++': 'examples/demo.cpp#greet' }} />
+
+<Snippet src="examples/demo.rs" title="Whole file" />

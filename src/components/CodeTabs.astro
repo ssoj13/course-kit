@@ -1,0 +1,26 @@
+---
+/**
+ * The same step in several languages, as tabs: `<CodeTabs items={{ 'Rust (ash)': 'examples/...rs#x', 'C++': '...#x' }} />`.
+ * Tabs share Starlight's `syncKey`, so picking a language once switches every CodeTabs on the page (and is remembered).
+ */
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { loadSnippet } from '../lib/snippets';
+
+interface Props {
+	/** Tab label -> `path#region` (insertion order = tab order). */
+	items: Record<string, string>;
+}
+
+const tabs = Object.entries(Astro.props.items).map(([label, src]) => ({ label, s: loadSnippet(src) }));
+if (tabs.length === 0) throw new Error('<CodeTabs>: `items` is empty');
+---
+
+<Tabs syncKey="code-lang">
+	{
+		tabs.map(({ label, s }) => (
+			<TabItem label={label}>
+				<Code code={s.code} lang={s.lang} title={s.file} />
+			</TabItem>
+		))
+	}
+</Tabs>

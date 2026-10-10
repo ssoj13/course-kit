@@ -1,0 +1,21 @@
+---
+/**
+ * One code block taken from a real source file: `<Snippet src="examples/rust/src/main.rs#create-instance" />`.
+ * The region markers keep lesson code identical to code that compiles (lib/regions.ts); a missing region fails the build.
+ */
+import { Code } from '@astrojs/starlight/components';
+import { loadSnippet } from '../lib/snippets';
+
+interface Props {
+	src: string;
+	/** Overrides the title (default: the file path). */
+	title?: string;
+	/** Line ranges or strings to highlight, passed to Expressive Code (`mark`). */
+	mark?: string | string[];
+}
+
+const { src, title, mark } = Astro.props;
+const s = loadSnippet(src);
+---
+
+<Code code={s.code} lang={s.lang} title={title ?? s.file} mark={mark} />
