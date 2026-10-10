@@ -1,11 +1,12 @@
 /**
- * Canvas frame shared by every graph island: fixed height in the page, with a button that expands it to the whole
- * viewport (Esc or the button returns). Big maps stay readable without shrinking to fit a 45rem column.
- * The canvas is re-mounted on toggle (`key`), so react-flow's `fitView` refits to the new size.
+ * Canvas frame shared by every graph island: fixed height in the page, a full-screen toggle (Esc returns) and a
+ * "reset layout" button. Node positions belong to the island (nodes are draggable), so reset is the island's
+ * `onReset`; the full-screen toggle re-mounts the canvas (`key`) so `fitView` refits to the new size while the
+ * island keeps the positions.
  */
 import { useEffect, useState, type ReactNode } from 'react';
 
-export function Frame({ height, children }: { height: number; children: ReactNode }) {
+export function Frame({ height, onReset, children }: { height: number; onReset: () => void; children: ReactNode }) {
 	const [full, setFull] = useState(false);
 	useEffect(() => {
 		if (!full) return;
@@ -19,9 +20,14 @@ export function Frame({ height, children }: { height: number; children: ReactNod
 	}, [full]);
 	return (
 		<div className={`ck-graph-canvas${full ? ' is-full' : ''}`} style={full ? undefined : { height }}>
-			<button type="button" className="ck-full-btn" onClick={() => setFull((f) => !f)} aria-pressed={full}>
-				{full ? 'Close ✕' : 'Full screen ⤢'}
-			</button>
+			<div className="ck-tools">
+				<button type="button" className="ck-tool" onClick={onReset} title="Put moved nodes back">
+					Reset layout
+				</button>
+				<button type="button" className="ck-tool" onClick={() => setFull((f) => !f)} aria-pressed={full}>
+					{full ? 'Close ✕' : 'Full screen ⤢'}
+				</button>
+			</div>
 			<div key={full ? 'full' : 'inline'} className="ck-graph-flow">
 				{children}
 			</div>

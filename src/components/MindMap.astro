@@ -13,7 +13,7 @@
  *   <MindMap mode="all" />                   the whole graph
  */
 import GraphView, { EDGE_STYLE, type ViewEdge, type ViewNode } from './graph/GraphView.tsx';
-import { ancestors, descendants, everything, lessonMap, neighborhood, type EdgeType, type SubGraph } from '../lib/graph';
+import { HIERARCHY, ancestors, descendants, everything, lessonMap, neighborhood, type EdgeType, type SubGraph } from '../lib/graph';
 import { graph } from '../lib/terms';
 import { canvasHeight, layout } from '../lib/layout';
 import { href, lessonByPath, lessonBySlug, resolveLink } from '../lib/course';
@@ -37,8 +37,16 @@ else if (term) sub = mode === 'genealogy' ? ancestors(graph, term) : mode === 'u
 else if (lesson) sub = lessonMap(graph, lesson);
 else throw new Error('<MindMap>: pass `term`, `lesson` or mode="all" (or use it on a lesson page)');
 
-const laid = layout(sub);
+// Course position of a term (its lesson number; untaught terms last), for left-to-right order inside a row.
+const courseOrder = (lessonSlug?: string) => (lessonSlug ? (lessonBySlug(lessonSlug)?.num ?? 1e6) : 1e6);
+// Foundations on top: a hierarchy relation `from -> to` ("device is built on physical device") puts `to` above.
+const laid = layout({
+	nodes: sub.terms.map((t, i) => ({ id: t.id, label: t.label, order: courseOrder(t.lesson) * 1000 + i })),
+	links: sub.edges.filter((e) => HIERARCHY.includes(e.type)).map((e) => ({ source: e.to, target: e.from })),
+});
 const placed = new Map(laid.nodes.map((n) => [n.id, n]));
+/** API identifiers (VkDevice, VK_EXT_..., vkCreate...) get a monospace title. */
+const isCode = (label: string) => /^(Vk[A-Z]|VK_|vk[A-Z])/.test(label);
 const layerLabel = (id: string) => graph.layers[graph.layerIndex.get(id) ?? 0]?.label ?? id;
 
 const nodes: ViewNode[] = sub.terms.map((t) => {
@@ -57,6 +65,7 @@ const nodes: ViewNode[] = sub.terms.map((t) => {
 		w: p.w,
 		h: p.h,
 		focus: t.id === term || (!term && t.lesson === lesson),
+		code: isCode(t.label),
 	};
 });
 const edges: ViewEdge[] = sub.edges.map((e) => ({ from: e.from, to: e.to, type: e.type, label: e.label }));

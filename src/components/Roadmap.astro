@@ -1,25 +1,25 @@
 ---
 /**
- * Course roadmap graph (roadmap.sh style) from course.json: a vertical spine of modules, each module's lessons
- * split to both sides. The layout is a fixed grid computed here (no ELK needed: the structure is a tree of
- * depth 2), so the same course always draws the same picture. A text version follows for readers without JS.
+ * Course roadmap graph from course.json, read like a file tree: modules top to bottom in course order, each
+ * module's lessons below it and indented to the right, all on one spine. A fixed grid computed here (no layout
+ * engine needed for a depth-2 tree) keeps it narrow enough to read at full size in the content column.
  */
 import RoadmapView, { type RoadEdge, type RoadNode } from './graph/RoadmapView.tsx';
 import { href, moduleHref, modules } from '../lib/course';
 
-const MOD_W = 280;
-const LES_W = 250;
-const H = 40;
-const ROW = 50;
-const GAP_X = 50;
-const GAP_Y = 46;
+const MOD_W = 330;
+const LES_W = 300;
+const INDENT = 56;
+const MOD_H = 46;
+const LES_H = 38;
+const GAP = 14;
+const MOD_GAP = 30;
 
 const nodes: RoadNode[] = [];
 const edges: RoadEdge[] = [];
 let y = 0;
+let prev: string | undefined;
 for (const m of modules) {
-	const left = m.lessons.slice(0, Math.ceil(m.lessons.length / 2));
-	const right = m.lessons.slice(left.length);
 	const id = `m:${m.slug}`;
 	nodes.push({
 		id,
@@ -28,45 +28,42 @@ for (const m of modules) {
 		href: moduleHref(m.slug),
 		slug: '',
 		lessons: m.lessons.map((l) => l.slug),
-		side: 'center',
 		optional: m.optional,
-		x: -MOD_W / 2,
+		x: 0,
 		y,
 		w: MOD_W,
-		h: H + 8,
+		h: MOD_H,
 	});
-	const place = (ls: typeof left, side: 'left' | 'right') =>
-		ls.forEach((l, i) => {
-			nodes.push({
-				id: `l:${l.slug}`,
-				kind: 'lesson',
-				label: `${l.num}. ${l.label}`,
-				href: href(l.slug),
-				slug: l.slug,
-				lessons: [],
-				side,
-				optional: l.optional,
-				x: side === 'left' ? -MOD_W / 2 - GAP_X - LES_W : MOD_W / 2 + GAP_X,
-				y: y + i * ROW,
-				w: LES_W,
-				h: H,
-			});
-			edges.push({ from: id, to: `l:${l.slug}`, spine: false });
+	if (prev) edges.push({ from: prev, to: id, spine: true });
+	prev = id;
+	y += MOD_H + GAP;
+	for (const l of m.lessons) {
+		nodes.push({
+			id: `l:${l.slug}`,
+			kind: 'lesson',
+			label: `${l.num}. ${l.label}`,
+			href: href(l.slug),
+			slug: l.slug,
+			lessons: [],
+			optional: l.optional,
+			x: INDENT,
+			y,
+			w: LES_W,
+			h: LES_H,
 		});
-	place(left, 'left');
-	place(right, 'right');
-	const prev = nodes.findLast((n) => n.kind === 'module' && n.id !== id);
-	if (prev) edges.push({ from: prev.id, to: id, spine: true });
-	y += Math.max(left.length, 1) * ROW + GAP_Y;
+		edges.push({ from: id, to: `l:${l.slug}`, spine: false });
+		y += LES_H + GAP;
+	}
+	y += MOD_GAP - GAP;
 }
-const height = Math.min(900, Math.max(360, Math.round(y * 0.75)));
+const height = Math.min(820, y + 40);
 ---
 
 <figure class="ck-roadmap not-content">
 	<div style={`min-height:${height + 2}px`}>
 		<RoadmapView client:only="react" nodes={nodes} edges={edges} height={height} />
 	</div>
-	<figcaption>Modules run top to bottom; lessons branch off each module. Completed lessons turn green.</figcaption>
+	<figcaption>Modules run top to bottom; each module's lessons follow it. Completed lessons turn green.</figcaption>
 </figure>
 
 <style>

@@ -68,7 +68,11 @@ Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course page
 - [x] CI: test + fixture build + check on push (green on ubuntu, real Node: the .mjs config side works)
 - [x] Graph readability: `lib/fit.ts` (FIT_ZOOM 0.75-1.2, alignTop: start at the root), `canvasHeight()` in
       layout.ts, `graph/Frame.tsx` full-screen toggle, layout edges accept `minlen`
-- [ ] Direction conventions differ: term maps put foundations at the bottom (depth stack), object trees (vulkan_en
-      ObjectGraph) put the root at the top. Decide with the user whether to unify.
+- [x] One reading order everywhere (user, 2026-10-10: "слева направо сверху вниз"): foundations/roots on top, wires
+      run down, rows left to right in course order (lib/layout.ts: links source-above-target + per-row dagre
+      order constraints from a first pass). Roadmap is a file-tree (modules on a left spine, lessons indented).
+- [x] Node-editor look (graph.css): cards with colored title bar + ports, bezier wires, selected node's wires lit,
+      secondary relations faint; nodes draggable (`graph/flow.ts` useFlowNodes keeps drags across data updates,
+      Frame "Reset layout"); edge labels live in the info panel, not on the canvas.
 - [ ] Course-wide quiz lint (vllm_en had tests/js/quiz-lint.test.ts): giveaway share via `correctIsLongest`
 - [ ] Migration of vllm_en (progress keys were `vllm-course:` prefixed; its widgets) and math_en
