@@ -7,6 +7,22 @@ import Quiz from 'course-kit/components/Quiz.astro';
 
 Next is [lesson two](lesson:two), the [roadmap](page:roadmap), the term [alpha](term:alpha) and <Term id="beta" />.
 
+## The map
+
 <MindMap />
 
-<Quiz questions={[{ q: 'Alpha is built on?', options: ['Beta', 'Gamma', 'Delta', 'Nothing'], answer: 0, explain: 'See the map.' }]} />
+<Quiz
+	questions={[
+		{
+			q: 'Alpha is built on?',
+			options: [
+				{ text: 'Beta', why: 'The map has a wire from beta down to alpha.' },
+				{ text: 'Gamma', why: 'Gamma is a kind of alpha, so it sits below alpha, not under it.' },
+				{ text: 'Delta', why: 'There is no delta in this course.' },
+				{ text: 'Nothing', why: 'Alpha has a parent: beta.' },
+			],
+			answer: 0,
+			ref: '#the-map',
+		},
+	]}
+/>

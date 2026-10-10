@@ -12,6 +12,7 @@ import './graph.css';
 import { Frame } from './Frame';
 import { heat, useFlowNodes } from './flow';
 import { FIT_ZOOM, alignTop } from '../../lib/fit';
+import { REL_KEY, ui } from '../../i18n.mjs';
 import type { EdgeType } from '../../lib/graph';
 
 export interface ViewNode {
@@ -43,6 +44,8 @@ export interface ViewEdge {
 }
 
 export interface GraphViewProps {
+	/** Page language: interface texts come from the engine's table (i18n.mjs). */
+	lang: string;
 	nodes: ViewNode[];
 	edges: ViewEdge[];
 	/** Canvas height in px. */
@@ -54,15 +57,15 @@ export interface GraphViewProps {
 }
 
 /**
- * Edge look per type; the legend uses the same table. `text` reads from the relation's `from` term
- * ("device is built on physical device"); `wire` names the wire as drawn, top to bottom.
+ * Edge look per type; the legend uses the same table. Names come from the interface texts (REL_KEY): `rel` reads
+ * from the relation's `from` term ("device is built on physical device"), `wire` names the wire as drawn, top down.
  */
-export const EDGE_STYLE: Record<EdgeType, { dash?: string; arrow: boolean; text: string; wire: string; muted: boolean }> = {
-	'built-on': { arrow: true, text: 'is built on', wire: 'is the base of', muted: false },
-	'is-a': { dash: '7 5', arrow: true, text: 'is a kind of', wire: 'has the kind', muted: false },
-	'part-of': { dash: '2 5', arrow: true, text: 'is part of', wire: 'contains', muted: false },
-	uses: { arrow: true, text: 'uses', wire: 'is used by', muted: true },
-	related: { dash: '4 5', arrow: false, text: 'is related to', wire: 'is related to', muted: true },
+export const EDGE_STYLE: Record<EdgeType, { dash?: string; arrow: boolean; muted: boolean }> = {
+	'built-on': { arrow: true, muted: false },
+	'is-a': { dash: '7 5', arrow: true, muted: false },
+	'part-of': { dash: '2 5', arrow: true, muted: false },
+	uses: { arrow: true, muted: true },
+	related: { dash: '4 5', arrow: false, muted: true },
 };
 
 type TermData = ViewNode & Record<string, unknown>;
@@ -86,7 +89,8 @@ function TermNode({ data, selected }: NodeProps<Node<TermData>>) {
 
 const nodeTypes = { term: TermNode };
 
-export default function GraphView({ nodes, edges, height, legend, layers }: GraphViewProps) {
+export default function GraphView({ lang, nodes, edges, height, legend, layers }: GraphViewProps) {
+	const t = ui(lang);
 	const [sel, setSel] = useState<string | null>(nodes.find((n) => n.focus)?.id ?? null);
 	const byId = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
@@ -128,7 +132,7 @@ export default function GraphView({ nodes, edges, height, legend, layers }: Grap
 
 	return (
 		<div className="ck-graph">
-			<Frame height={height} onReset={reset}>
+			<Frame lang={lang} height={height} onReset={reset}>
 				<ReactFlow
 					nodes={rfNodes}
 					edges={heat(rfEdges, sel)}
@@ -162,7 +166,7 @@ export default function GraphView({ nodes, edges, height, legend, layers }: Grap
 							<ul className="ck-relations">
 								{relations.map((e, i) => (
 									<li key={i}>
-										{byId.get(e.from)?.label} <em>{e.label ?? EDGE_STYLE[e.type].text}</em> {byId.get(e.to)?.label}
+										{byId.get(e.from)?.label} <em>{e.label ?? t[REL_KEY[e.type].rel]}</em> {byId.get(e.to)?.label}
 									</li>
 								))}
 							</ul>
@@ -170,18 +174,18 @@ export default function GraphView({ nodes, edges, height, legend, layers }: Grap
 						<a href={cur.href}>{cur.hrefLabel}</a>
 					</>
 				) : (
-					<p className="ck-muted">Click a box to see what it is, how it connects and where it is taught. Drag boxes to untangle.</p>
+					<p className="ck-muted">{t.graphHint}</p>
 				)}
 			</div>
 			<div className="ck-legend" aria-label="Legend">
-				<span className="ck-legend-note">Foundations on top; wires run down to what is built on them.</span>
+				<span className="ck-legend-note">{t.graphLegendNote}</span>
 				<ul>
-					{legend.map((t) => (
-						<li key={t}>
+					{legend.map((type) => (
+						<li key={type}>
 							<svg width="34" height="10" aria-hidden="true">
-								<line x1="1" y1="5" x2="33" y2="5" strokeDasharray={EDGE_STYLE[t].dash} />
+								<line x1="1" y1="5" x2="33" y2="5" strokeDasharray={EDGE_STYLE[type].dash} />
 							</svg>
-							{EDGE_STYLE[t].wire}
+							{t[REL_KEY[type].wire]}
 						</li>
 					))}
 					{layers.map((l) => (

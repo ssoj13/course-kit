@@ -153,6 +153,129 @@ export function checkTerms(raw, course) {
 	return /** @type {TermsJson} */ (t);
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// Translations. A course is authored in its default language (course.json, terms.json); every other language has
+// an overlay next to it (course.<locale>.json, terms.<locale>.json) that carries only the texts, keyed by the
+// default manifests' slugs and ids. Structure (order, slugs, edges, lesson links) exists once. Overlays must be
+// complete: a missing or unknown key fails the build, so no page silently falls back to another language.
+
+/**
+ * @typedef {{ title: string, short?: string, summary: string }} LessonText
+ * @typedef {{ title: string, summary: string, lessons: Record<string, LessonText> }} ModuleText
+ * @typedef {{ title: string, description: string, modules: Record<string, ModuleText> }} CourseOverlay
+ * @typedef {{ label: string, def: string, aka?: string[] }} TermText
+ * @typedef {{ layers: Record<string, string>, terms: Record<string, TermText>, edges?: Record<string, string> }} TermsOverlay
+ */
+
+/** Overlay key of an edge label: `from|type|to`. */
+export const edgeKey = (/** @type {{ from: string, type: string, to: string }} */ e) => `${e.from}|${e.type}|${e.to}`;
+
+/**
+ * @param {string[]} errs
+ * @param {string} at
+ * @param {Record<string, unknown> | undefined} rec
+ * @param {Iterable<string>} expected
+ */
+function sameKeys(errs, at, rec, expected) {
+	const want = new Set(expected);
+	const have = new Set(Object.keys(rec ?? {}));
+	for (const k of want) if (!have.has(k)) errs.push(`${at}: missing "${k}"`);
+	for (const k of have) if (!want.has(k)) errs.push(`${at}: unknown "${k}"`);
+}
+
+/**
+ * Applies a course overlay; returns the localized course (same structure, translated texts) or throws one Error
+ * listing every problem.
+ * @param {unknown} raw
+ * @param {CourseJson} course
+ * @param {string} locale
+ * @returns {CourseJson}
+ */
+export function localizeCourse(raw, course, locale) {
+	/** @type {string[]} */
+	const errs = [];
+	const o = /** @type {Partial<CourseOverlay>} */ (raw ?? {});
+	if (!str(o.title)) errs.push('`title` is empty');
+	if (!str(o.description)) errs.push('`description` is empty');
+	sameKeys(errs, 'modules', o.modules, course.modules.map((m) => m.slug));
+	for (const m of course.modules) {
+		const mt = o.modules?.[m.slug];
+		if (!mt) continue;
+		if (!str(mt.title)) errs.push(`modules.${m.slug}: empty title`);
+		if (!str(mt.summary)) errs.push(`modules.${m.slug}: empty summary`);
+		sameKeys(errs, `modules.${m.slug}.lessons`, mt.lessons, m.lessons.map((l) => l.slug));
+		for (const l of m.lessons) {
+			const lt = mt.lessons?.[l.slug];
+			if (!lt) continue;
+			if (!str(lt.title)) errs.push(`modules.${m.slug}.lessons.${l.slug}: empty title`);
+			if (!str(lt.summary)) errs.push(`modules.${m.slug}.lessons.${l.slug}: empty summary`);
+			if (lt.short !== undefined && !str(lt.short)) errs.push(`modules.${m.slug}.lessons.${l.slug}: \`short\` must be non-empty when present`);
+		}
+	}
+	if (errs.length) throw new Error(`course.${locale}.json is invalid:\n  - ${errs.join('\n  - ')}`);
+	const ov = /** @type {CourseOverlay} */ (o);
+	return {
+		id: course.id,
+		title: ov.title,
+		description: ov.description,
+		modules: course.modules.map((m) => {
+			const mt = ov.modules[m.slug];
+			return {
+				...m,
+				title: mt.title,
+				summary: mt.summary,
+				lessons: m.lessons.map((l) => {
+					const lt = mt.lessons[l.slug];
+					/** @type {LessonJson} */
+					const out = { slug: l.slug, title: lt.title, summary: lt.summary };
+					if (lt.short) out.short = lt.short;
+					return out;
+				}),
+			};
+		}),
+	};
+}
+
+/**
+ * Applies a terms overlay; returns the localized term graph or throws one Error listing every problem.
+ * Edge labels are optional per edge: an edge labelled in the default language needs a translated label.
+ * @param {unknown} raw
+ * @param {TermsJson} terms
+ * @param {string} locale
+ * @returns {TermsJson}
+ */
+export function localizeTerms(raw, terms, locale) {
+	/** @type {string[]} */
+	const errs = [];
+	const o = /** @type {Partial<TermsOverlay>} */ (raw ?? {});
+	sameKeys(errs, 'layers', o.layers, terms.layers.map((l) => l.id));
+	for (const [k, v] of Object.entries(o.layers ?? {})) if (!str(v)) errs.push(`layers.${k}: empty label`);
+	sameKeys(errs, 'terms', o.terms, terms.terms.map((t) => t.id));
+	for (const t of terms.terms) {
+		const tt = o.terms?.[t.id];
+		if (!tt) continue;
+		if (!str(tt.label)) errs.push(`terms.${t.id}: empty label`);
+		if (!str(tt.def)) errs.push(`terms.${t.id}: empty def`);
+		if (tt.aka !== undefined && !(Array.isArray(tt.aka) && tt.aka.every(str))) errs.push(`terms.${t.id}: \`aka\` must be non-empty strings`);
+	}
+	sameKeys(errs, 'edges', o.edges, terms.edges.filter((e) => e.label).map(edgeKey));
+	for (const [k, v] of Object.entries(o.edges ?? {})) if (!str(v)) errs.push(`edges["${k}"]: empty label`);
+	if (errs.length) throw new Error(`terms.${locale}.json is invalid:\n  - ${errs.join('\n  - ')}`);
+	const ov = /** @type {TermsOverlay} */ (o);
+	return {
+		layers: terms.layers.map((l) => ({ id: l.id, label: ov.layers[l.id] })),
+		terms: terms.terms.map((t) => {
+			const tt = ov.terms[t.id];
+			/** @type {TermJson} */
+			const out = { ...t, label: tt.label, def: tt.def };
+			if (tt.aka) out.aka = tt.aka;
+			else delete out.aka;
+			return out;
+		}),
+		edges: terms.edges.map((e) => (e.label ? { ...e, label: ov.edges?.[edgeKey(e)] ?? e.label } : e)),
+	};
+}
+
 /**
  * First directed cycle in an edge list (as a closed path of ids), or null. Iterative DFS with colors,
  * so a deep chain cannot overflow the stack.

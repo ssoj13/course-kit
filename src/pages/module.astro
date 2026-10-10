@@ -1,55 +1,58 @@
 ---
 /**
- * Module overview pages (`/<module>/`), one per course.json module: summary, the module's lessons, the module's
- * knowledge map and links to the neighbouring modules. Generated, so a module never needs a hand-written index.
+ * Module overview pages (`/<module>/`, `/<lang>/<module>/`), one per course.json module and language: summary, the
+ * module's lessons, each lesson's map and links to the neighbouring modules. Generated, so a module never needs a
+ * hand-written index. The same entrypoint serves every language (see index.mjs); the URL decides which.
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import CourseMap from '../components/CourseMap.astro';
 import MindMap from '../components/MindMap.astro';
-import { href, moduleHref, modules, pageHref, type Module } from '../lib/course';
-import { graph } from '../lib/terms';
+import { DEFAULT_LANG, courseIn, langOf } from '../lib/course';
+import { graphIn } from '../lib/terms';
 
+/** Module slugs are the same in every language, so the paths are too. */
 export function getStaticPaths() {
-	return modules.map((m) => ({ params: { module: m.slug }, props: { mod: m } }));
+	return courseIn(DEFAULT_LANG).modules.map((m) => ({ params: { module: m.slug } }));
 }
 
-interface Props {
-	mod: Module;
-}
-
-const { mod } = Astro.props;
-const prev = modules[mod.num - 2];
-const next = modules[mod.num];
+const v = courseIn(langOf(Astro.url.pathname));
+const mod = v.modules.find((m) => m.slug === Astro.params.module);
+if (!mod) throw new Error(`course.json has no module "${Astro.params.module}"`);
+const prev = v.modules[mod.num - 2];
+const next = v.modules[mod.num];
 const first = mod.lessons[0];
 if (!first) throw new Error(`course.json: module "${mod.slug}" has no lessons`);
-// The module map: terms of its lessons and their neighbors. Lessons without terms are skipped.
+const last = mod.lessons[mod.lessons.length - 1]!;
+// The module map: terms of its lessons and their neighbours. Lessons without terms are skipped.
+const graph = graphIn(v.lang);
 const mapLessons = mod.lessons.filter((l) => graph.terms.some((t) => t.lesson === l.slug));
 ---
 
 <StarlightPage
 	frontmatter={{
-		title: `Module ${mod.num}: ${mod.title}${mod.optional ? ' (optional)' : ''}`,
+		title: v.tf('moduleTitle', { n: mod.num, title: mod.title }) + (mod.optional ? ` ${v.t.optional}` : ''),
 		description: mod.summary,
 		editUrl: false,
 	}}
 >
 	<p>{mod.summary}</p>
 	<p>
-		{mod.lessons.length} lessons, {first.num}–{first.num + mod.lessons.length - 1} of the course. <a href={href(first.slug)}>Start with lesson {first.num}: {first.title}</a>.
+		{v.tf('moduleCount', { count: mod.lessons.length, first: first.num, last: last.num })}{' '}
+		<a href={v.href(first.slug)}>{v.tf('moduleStart', { n: first.num, title: first.title })}</a>.
 	</p>
 	<CourseMap module={mod.slug} />
 	{
 		mapLessons.map((l) => (
 			<>
-				<h2>Map of lesson {l.num}: {l.title}</h2>
+				<h2>{v.tf('moduleLessonMap', { n: l.num, title: l.title })}</h2>
 				<MindMap lesson={l.slug} />
 			</>
 		))
 	}
-	<nav class="module-nav not-content" aria-label="Modules">
-		{prev ? <a href={moduleHref(prev.slug)}>← Module {prev.num}: {prev.title}</a> : <span />}
-		<a href={pageHref('roadmap')}>All modules</a>
-		{next ? <a href={moduleHref(next.slug)}>Module {next.num}: {next.title} →</a> : <span />}
+	<nav class="module-nav not-content" aria-label={v.t.modulesNav}>
+		{prev ? <a href={v.moduleHref(prev.slug)}>{v.tf('prevModule', { n: prev.num, title: prev.title })}</a> : <span />}
+		<a href={v.pageHref('roadmap')}>{v.t.allModules}</a>
+		{next ? <a href={v.moduleHref(next.slug)}>{v.tf('nextModule', { n: next.num, title: next.title })}</a> : <span />}
 	</nav>
 </StarlightPage>
 

@@ -1,23 +1,27 @@
 ---
 /**
- * Glossary generated from terms.json: every term with its definition, depth layer, what it is built on and the
- * lesson that teaches it. `term:<id>` links and <Term> point at the `#term-<id>` anchors here.
+ * Glossary generated from terms.json (+ overlay) in the page's language: every term with its definition, depth
+ * layer, what it is built on and the lesson that teaches it. `term:<id>` links and <Term> point at the
+ * `#term-<id>` anchors here (the same ids in every language).
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import { graph } from '../lib/terms';
+import { graphIn } from '../lib/terms';
 import { parents, sortedTerms } from '../lib/graph';
-import { href, lessonBySlug } from '../lib/course';
+import { courseIn, langOf } from '../lib/course';
 import { termAnchor } from '../links.mjs';
+import { REL_KEY } from '../i18n.mjs';
 
-const entries = sortedTerms(graph).map((t) => ({
+const v = courseIn(langOf(Astro.url.pathname));
+const graph = graphIn(v.lang);
+const entries = sortedTerms(graph, v.lang).map((t) => ({
 	t,
 	layer: graph.layers[graph.layerIndex.get(t.layer) ?? 0]?.label ?? t.layer,
-	lesson: t.lesson ? lessonBySlug(t.lesson) : undefined,
+	lesson: t.lesson ? v.lessonBySlug(t.lesson) : undefined,
 	parents: parents(graph, t.id),
 }));
 ---
 
-<StarlightPage frontmatter={{ title: 'Glossary', description: 'Every term of the course, what it is and what it is built on.', editUrl: false }}>
+<StarlightPage frontmatter={{ title: v.t.glossary, description: v.t.glossaryDescription, editUrl: false }}>
 	<dl class="ck-glossary">
 		{
 			entries.map(({ t, layer, lesson, parents }) => (
@@ -27,20 +31,20 @@ const entries = sortedTerms(graph).map((t) => ({
 					</dt>
 					<dd>
 						<p>{t.def}</p>
-						{t.aka?.length ? <p class="ck-meta">Also called: {t.aka.join(', ')}</p> : null}
+						{t.aka?.length ? <p class="ck-meta">{v.tf('alsoCalled', { names: t.aka.join(', ') })}</p> : null}
 						{parents.length > 0 && (
 							<p class="ck-meta">
 								{parents.map((p, i) => (
 									<>
 										{i > 0 && '; '}
-										{p.edge.label ?? p.edge.type.replace('-', ' ')} <a href={`#${termAnchor(p.term.id)}`}>{p.term.label}</a>
+										{p.edge.label ?? v.t[REL_KEY[p.edge.type].rel]} <a href={`#${termAnchor(p.term.id)}`}>{p.term.label}</a>
 									</>
 								))}
 							</p>
 						)}
 						{lesson && (
 							<p class="ck-meta">
-								Taught in <a href={href(lesson.slug)}>lesson {lesson.num}: {lesson.title}</a>
+								{v.t.taughtIn} <a href={v.href(lesson.slug)}>{v.tf('lessonRef', { n: lesson.num, title: lesson.title })}</a>
 							</p>
 						)}
 					</dd>

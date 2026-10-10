@@ -1,30 +1,33 @@
 ---
 /**
- * Course roadmap: the roadmap.sh-style graph of modules and lessons, the knowledge map of every term, the lesson
- * tables and the progress export - all generated from course.json and terms.json.
+ * Course roadmap in the page's language: the file-tree graph of modules and lessons, the knowledge map of every term,
+ * the lesson tables and the progress export - all generated from course.json and terms.json (+ overlays).
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import Roadmap from '../components/Roadmap.astro';
 import MindMap from '../components/MindMap.astro';
 import CourseMap from '../components/CourseMap.astro';
 import ProgressExport from '../components/ProgressExport.astro';
-import { COURSE_TITLE } from '../lib/course';
-import { graph } from '../lib/terms';
+import { courseIn, langOf } from '../lib/course';
+import { graphIn } from '../lib/terms';
+
+const v = courseIn(langOf(Astro.url.pathname));
+const hasTerms = graphIn(v.lang).terms.length > 0;
 ---
 
-<StarlightPage frontmatter={{ title: 'Course roadmap', description: `Every module and lesson of ${COURSE_TITLE}.`, editUrl: false }}>
-	<p>The whole course on one page. Each step builds on the ones above it; click any box to open it.</p>
+<StarlightPage frontmatter={{ title: v.t.roadmap, description: v.tf('roadmapDescription', { course: v.title }), editUrl: false }}>
+	<p>{v.t.roadmapIntro}</p>
 	<Roadmap />
 	{
-		graph.terms.length > 0 && (
+		hasTerms && (
 			<>
-				<h2>Knowledge map</h2>
-				<p>Every concept of the course and what it is built on. Foundations sit at the top; drag boxes to untangle.</p>
+				<h2>{v.t.knowledgeMap}</h2>
+				<p>{v.t.knowledgeMapIntro}</p>
 				<MindMap mode="all" />
 			</>
 		)
 	}
-	<h2>Lessons</h2>
+	<h2>{v.t.lessons}</h2>
 	<CourseMap />
 	<ProgressExport />
 </StarlightPage>

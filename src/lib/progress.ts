@@ -1,10 +1,12 @@
 /**
- * Course progress: the completion record shared by <LessonDone>, <ProgressExport>, the roadmap graph and
- * the sidebar override (which marks completed lessons on every page). Keyed by lesson slug (course.json).
+ * Course progress: the completion record shared by <LessonDone>, <ProgressExport>, the roadmap graph and the sidebar
+ * override (which marks completed lessons on every page). Keyed by lesson slug, which is the same in every language,
+ * so a lesson completed in one language counts in all of them.
  */
-import { href, lessons } from './course';
+import { ALL_VIEWS, DEFAULT_LANG, courseIn } from './course';
 import { KEYS, load, save, watch } from './store';
 
+const lessons = courseIn(DEFAULT_LANG).lessons;
 export const LESSON_SLUGS: readonly string[] = lessons.map((l) => l.slug);
 
 export type Progress = Record<string, boolean>;
@@ -54,15 +56,16 @@ export function counts(progress: Progress): Counts {
 	return c;
 }
 
-/** "12/15 core · 1/3 optional" (the optional part only when the course has optional modules). */
-export function describe(progress: Progress): string {
+/** "12/15 core · 1/3 optional" in a language (the optional part only when the course has optional modules). */
+export function describe(progress: Progress, lang: string): string {
 	const c = counts(progress);
-	const core = `${c.core}/${c.coreTotal} core`;
-	return c.optionalTotal ? `${core} · ${c.optional}/${c.optionalTotal} optional` : core;
+	const v = courseIn(lang);
+	const core = v.tf('describeCore', { done: c.core, total: c.coreTotal });
+	return c.optionalTotal ? `${core} · ${v.tf('describeOptional', { done: c.optional, total: c.optionalTotal })}` : core;
 }
 
-/** Sidebar link path (base-prefixed, trailing slash) -> lesson slug. */
-const SLUG_BY_PATH = new Map(lessons.map((l) => [href(l.slug), l.slug]));
+/** Sidebar link path (base-prefixed, trailing slash) -> lesson slug, for lesson pages in every language. */
+const SLUG_BY_PATH = new Map(ALL_VIEWS.flatMap((v) => v.lessons.map((l) => [v.href(l.slug), l.slug] as const)));
 
 /** Adds `.lab-nav-complete` to the Starlight sidebar links of completed lessons (matched by full path). */
 export function markSidebar(progress: Progress = readProgress()): void {

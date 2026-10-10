@@ -16,8 +16,14 @@ its own widgets) and two JSON manifests. course-kit turns them into a full site:
   @xyflow/react.
 - **Code from real files.** `<Snippet>` and `<CodeTabs>` cut `#region` blocks out of the course's example sources,
   so the code in the lessons is the code that compiles.
-- **Progress and quizzes.** Progress is stored per browser and shown in the sidebar and on the roadmap, with
-  export and import. Quizzes are validated at build time, including a limit on "the longest option is the answer".
+- **Several languages.** The first language is served at the base path, the others under `/<code>/`, with
+  Starlight's language switcher. Each extra language has translation overlays next to the manifests, and the
+  build fails if any of them is incomplete. Links, sidebar, generated pages and the engine's interface follow the
+  page's language.
+- **Progress and quizzes.** Progress is stored per browser and shared by all languages. It shows in the sidebar
+  and on the roadmap, with export and import. A quiz grades the moment an option is picked: the option flashes,
+  the reader gets the reason why it is right or wrong, and a link to the section that explains it. Quizzes are
+  validated at build time, including dead section links and a limit on "the longest option is the answer".
 
 ## Use it in a course
 
@@ -35,10 +41,12 @@ export default defineCourse({
 	repo: 'https://github.com/<user>/<repo>',
 	course: new URL('./src/data/course.json', import.meta.url),
 	terms: new URL('./src/data/terms.json', import.meta.url),
+	languages: [{ code: 'en', label: 'English' }, { code: 'ru', label: 'Русский' }], // optional, default English only
 });
 ```
 
-Lessons live at `src/content/docs/<module>/<lesson>.mdx`. The course also needs the usual Starlight
+Lessons live at `src/content/docs/<module>/<lesson>.mdx`. Lessons in another language live at
+`src/content/docs/<code>/<module>/<lesson>.mdx`, and every language needs its own `index.mdx`. The course also needs the usual Starlight
 `src/content.config.ts` (docs and i18n collections) and `src/content/i18n/en.json` (`{}`).
 
 ### course.json
@@ -79,6 +87,21 @@ label.
 - **`edges`** read as "`from` *is built on* `to`". The types are `built-on`, `is-a`, `part-of`, `uses` and
   `related`. The first three are hierarchy edges, and their union must be acyclic.
 
+### Translations
+
+Every language after the first has two overlays next to the manifests: `course.<code>.json` and
+`terms.<code>.json`. They contain only texts, keyed by the default manifests' slugs and ids. Order, slugs and
+relations exist in one place.
+
+```json
+// course.ru.json
+{ "title": "…", "description": "…", "modules": { "basics": { "title": "…", "summary": "…", "lessons": { "first": { "title": "…", "summary": "…" } } } } }
+// terms.ru.json
+{ "layers": { "concept": "…" }, "terms": { "gpu": { "label": "…", "def": "…" } }, "edges": { "shader|built-on|gpu": "…" } }
+```
+
+A missing or unknown key fails the build. Engine interface texts for a new language go into `src/i18n.mjs`.
+
 ### In MDX
 
 ```mdx
@@ -94,7 +117,17 @@ Read [the next lesson](lesson:second), the [roadmap](page:roadmap) or about <Ter
 
 <CodeTabs items={{ Rust: 'examples/demo.rs#setup', 'C++': 'examples/demo.cpp#setup' }} />
 
-<Quiz questions={[{ q: '...', options: ['a', 'b', 'c', 'd'], answer: 1, explain: '...' }]} />
+<Quiz questions={[{
+  q: 'What does a GPU run for every pixel?',
+  options: [
+    { text: 'A shader', why: 'One small program, run for many items at once.' },
+    { text: 'A driver', why: 'The driver runs on the CPU and prepares work; it is not run per pixel.' },
+    { text: 'A queue', why: 'A queue holds submitted work; it is not a program.' },
+    { text: 'The loader', why: 'The loader routes API calls on the CPU.' },
+  ],
+  answer: 0,
+  ref: '#shaders',          // a heading of this page, or lesson:slug#anchor
+}]} />
 ```
 
 Source files mark regions with line comments, `// #region setup` ... `// #endregion`, and the markers are never

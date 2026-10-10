@@ -1,18 +1,23 @@
 ---
 /**
- * Starlight PageTitle override: the stock <h1> plus, on lesson pages, a "Lesson N · Module M — Title"
- * eyebrow derived from course.json (frontmatter titles carry no numbers).
+ * Starlight PageTitle override: the stock <h1> plus, on lesson pages, a "Lesson N · Module M — Title" eyebrow
+ * derived from course.json in the page's language (frontmatter titles carry no numbers).
  */
 import Default from '@astrojs/starlight/components/PageTitle.astro';
-import { lessonByPath, moduleHref } from '../../lib/course';
+import { courseIn, langOf } from '../../lib/course';
 
-const lesson = lessonByPath(Astro.locals.starlightRoute.id);
+const v = courseIn(langOf(Astro.url.pathname));
+const lesson = v.lessonByPath(Astro.locals.starlightRoute.id);
 ---
 
 {
 	lesson && (
 		<p class="lesson-eyebrow">
-			Lesson {lesson.num} · <a href={moduleHref(lesson.moduleSlug)}>Module {lesson.moduleNum} — {lesson.moduleTitle}{lesson.optional && ' (optional)'}</a>
+			{v.tf('eyebrowLesson', { n: lesson.num })} ·{' '}
+			<a href={v.moduleHref(lesson.moduleSlug)}>
+				{v.tf('eyebrowModule', { n: lesson.moduleNum, title: lesson.moduleTitle })}
+				{lesson.optional && ` ${v.t.optional}`}
+			</a>
 		</p>
 	)
 }

@@ -76,6 +76,19 @@ export abstract class LabElement extends HTMLElement {
 		watchStore(key, fn, this.signal);
 	}
 
+	#texts: Record<string, string> | null = null;
+
+	/**
+	 * Interface text rendered by the server into `data-i18n` (JSON of the keys the script needs, in the page's
+	 * language), with `{name}` placeholders filled. Throws on a key the markup did not provide.
+	 */
+	protected text(key: string, vars: Record<string, string | number> = {}): string {
+		this.#texts ??= JSON.parse(this.dataset.i18n ?? '{}') as Record<string, string>;
+		const s = this.#texts[key];
+		if (s === undefined) throw new Error(`${this.localName}: missing interface text "${key}" in data-i18n`);
+		return s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+	}
+
 	/** Typed lookup of `[data-ref="name"]` inside this widget; throws on a markup/script mismatch. */
 	protected ref<T extends Element = HTMLElement>(name: string): T {
 		let e = this.#refs.get(name);

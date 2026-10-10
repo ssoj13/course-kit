@@ -1,33 +1,50 @@
 ---
 /**
- * Progress summary with JSON export / import / reset. Reads and writes the same
- * KEYS.progress record as <LessonDone>.
+ * Progress summary with JSON export / import / reset, in the page's language. Reads and writes the same
+ * KEYS.progress record as <LessonDone> (shared by every language: keys are lesson slugs).
  */
-import { href, modules } from '../lib/course';
+import { courseIn, langOf } from '../lib/course';
+
+const v = courseIn(langOf(Astro.url.pathname));
+const t = v.t;
+const i18n = JSON.stringify({
+	lessonDone: t.lessonDone,
+	lessonNotDone: t.lessonNotDone,
+	completedSummary: t.completedSummary,
+	progressReset: t.progressReset,
+	storageBlockedChange: t.storageBlockedChange,
+	imported: t.imported,
+	errNotJson: t.errNotJson,
+	errVersion: t.errVersion,
+	errProgressObject: t.errProgressObject,
+	errUnknownLesson: t.errUnknownLesson,
+	errBoolean: t.errBoolean,
+	errTooLarge: t.errTooLarge,
+});
 ---
 
-<lab-progress-export class="lab-card not-content">
-	<p class="lab-eyebrow">Progress</p>
-	<p class="lab-card-title">Your course progress</p>
-	<p class="lab-muted">
-		Progress is stored only in this browser. Export it to keep a copy or move it to another device.
-	</p>
+<lab-progress-export class="lab-card not-content" data-lang={v.lang} data-i18n={i18n}>
+	<p class="lab-eyebrow">{t.progress}</p>
+	<p class="lab-card-title">{t.yourProgress}</p>
+	<p class="lab-muted">{t.progressLocal}</p>
 
 	{
-		modules.map((m) => (
+		v.modules.map((m) => (
 			<section>
 				<p class="pe-module">
 					{m.num}. {m.title}
-					{m.optional && ' (optional)'}
+					{m.optional && ` ${t.optional}`}
 				</p>
 				<ol class="pe-list">
 					{m.lessons.map((l) => (
 						<li data-id={l.slug}>
 							<span class="pe-mark" aria-hidden="true">○</span>
-							<a href={href(l.slug)}>
+							<a href={v.href(l.slug)}>
 								{l.num}. {l.title}
 							</a>
-							<span class="lab-muted pe-state" data-state>not done</span>
+							<span class="lab-muted pe-state" data-state>
+								{t.lessonNotDone}
+							</span>
 						</li>
 					))}
 				</ol>
@@ -37,16 +54,16 @@ import { href, modules } from '../lib/course';
 	<p><strong data-ref="summary"></strong></p>
 
 	<div class="lab-row">
-		<button type="button" class="lab-button is-primary" data-ref="export">Download progress JSON</button>
-		<button type="button" class="lab-button" data-ref="import">Import from file…</button>
-		<button type="button" class="lab-button is-danger" data-ref="reset">Reset progress</button>
+		<button type="button" class="lab-button is-primary" data-ref="export">{t.exportJson}</button>
+		<button type="button" class="lab-button" data-ref="import">{t.importFile}</button>
+		<button type="button" class="lab-button is-danger" data-ref="reset">{t.resetProgress}</button>
 		<input type="file" accept="application/json,.json" data-ref="file" hidden />
 	</div>
 
 	<div class="lab-row pe-confirm" data-ref="confirm" hidden role="alert">
-		<span>Erase all completion marks in this browser?</span>
-		<button type="button" class="lab-button is-danger" data-ref="yes">Yes, reset</button>
-		<button type="button" class="lab-button" data-ref="no">Cancel</button>
+		<span>{t.resetConfirm}</span>
+		<button type="button" class="lab-button is-danger" data-ref="yes">{t.resetYes}</button>
+		<button type="button" class="lab-button" data-ref="no">{t.cancel}</button>
 	</div>
 
 	<p class="lab-msg" data-ref="msg" role="status" hidden></p>
@@ -97,29 +114,6 @@ import { href, modules } from '../lib/course';
 	const FORMAT_VERSION = 1;
 	const MAX_IMPORT_BYTES = 64 * 1024; // a real export is < 1 KB; refuse anything absurd before parsing
 
-	/** Validates an exported document; throws an Error with a reader-facing message. */
-	function parseExport(text: string): Record<string, boolean> {
-		let doc: unknown;
-		try {
-			doc = JSON.parse(text);
-		} catch {
-			throw new Error('The file is not valid JSON.');
-		}
-		const d = doc as { version?: unknown; progress?: unknown } | null;
-		if (!d || typeof d !== 'object' || d.version !== FORMAT_VERSION) {
-			throw new Error(`Unsupported file: expected an export with "version": ${FORMAT_VERSION}.`);
-		}
-		const p = d.progress;
-		if (!p || typeof p !== 'object' || Array.isArray(p)) throw new Error('"progress" must be an object.');
-		const out: Record<string, boolean> = {};
-		for (const [key, v] of Object.entries(p)) {
-			if (!LESSON_SLUGS.includes(key)) throw new Error(`Unknown lesson id "${key}".`);
-			if (typeof v !== 'boolean') throw new Error(`Lesson ${key}: value must be true or false.`);
-			if (v) out[key] = true;
-		}
-		return out;
-	}
-
 	class LabProgressExport extends LabElement {
 		protected mount() {
 			const confirmBox = this.ref('confirm');
@@ -138,17 +132,38 @@ import { href, modules } from '../lib/course';
 			});
 			this.on(this.ref('yes'), 'click', () => {
 				confirmBox.hidden = true;
-				this.commit({}, 'Progress reset.');
+				this.commit({}, this.text('progressReset'));
 			});
 
 			this.watch(KEYS.progress, () => this.render());
 			this.render();
 		}
 
+		/** Validates an exported document; throws an Error with a reader-facing message. */
+		private parseExport(text: string): Record<string, boolean> {
+			let doc: unknown;
+			try {
+				doc = JSON.parse(text);
+			} catch {
+				throw new Error(this.text('errNotJson'));
+			}
+			const d = doc as { version?: unknown; progress?: unknown } | null;
+			if (!d || typeof d !== 'object' || d.version !== FORMAT_VERSION) throw new Error(this.text('errVersion', { v: FORMAT_VERSION }));
+			const p = d.progress;
+			if (!p || typeof p !== 'object' || Array.isArray(p)) throw new Error(this.text('errProgressObject'));
+			const out: Record<string, boolean> = {};
+			for (const [key, val] of Object.entries(p)) {
+				if (!LESSON_SLUGS.includes(key)) throw new Error(this.text('errUnknownLesson', { id: key }));
+				if (typeof val !== 'boolean') throw new Error(this.text('errBoolean', { id: key }));
+				if (val) out[key] = true;
+			}
+			return out;
+		}
+
 		private commit(progress: Record<string, boolean>, okText: string): void {
 			const msg = this.ref('msg');
 			if (save(KEYS.progress, progress)) showMsg(msg, okText, 'ok');
-			else showMsg(msg, 'Browser storage is blocked: the change applies to this page view only and will not be remembered.', 'err');
+			else showMsg(msg, this.text('storageBlockedChange'), 'err');
 		}
 
 		private render(): void {
@@ -159,9 +174,9 @@ import { href, modules } from '../lib/course';
 				const mark = li.querySelector('.pe-mark');
 				const state = li.querySelector('[data-state]');
 				if (mark) mark.textContent = done ? '✓' : '○';
-				if (state) state.textContent = done ? 'completed' : 'not done';
+				if (state) state.textContent = this.text(done ? 'lessonDone' : 'lessonNotDone');
 			});
-			this.ref('summary').textContent = `Completed: ${describe(progress)}`;
+			this.ref('summary').textContent = this.text('completedSummary', { summary: describe(progress, this.dataset.lang ?? '') });
 		}
 
 		private exportJson(): void {
@@ -177,9 +192,9 @@ import { href, modules } from '../lib/course';
 			input.value = ''; // allow re-importing the same file
 			if (!f) return;
 			try {
-				if (f.size > MAX_IMPORT_BYTES) throw new Error('The file is too large to be a progress export.');
-				const progress = parseExport(await f.text());
-				this.commit(progress, `Imported ${Object.keys(progress).length} completed lessons from ${f.name}.`);
+				if (f.size > MAX_IMPORT_BYTES) throw new Error(this.text('errTooLarge'));
+				const progress = this.parseExport(await f.text());
+				this.commit(progress, this.text('imported', { n: Object.keys(progress).length, file: f.name }));
 			} catch (e) {
 				showMsg(this.ref('msg'), e instanceof Error ? e.message : String(e), 'err');
 			}

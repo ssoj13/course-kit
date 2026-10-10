@@ -5,8 +5,10 @@
  * island keeps the positions.
  */
 import { useEffect, useState, type ReactNode } from 'react';
+import { ui } from '../../i18n.mjs';
 
-export function Frame({ height, onReset, children }: { height: number; onReset: () => void; children: ReactNode }) {
+export function Frame({ lang, height, onReset, children }: { lang: string; height: number; onReset: () => void; children: ReactNode }) {
+	const t = ui(lang);
 	const [full, setFull] = useState(false);
 	useEffect(() => {
 		if (!full) return;
@@ -21,11 +23,11 @@ export function Frame({ height, onReset, children }: { height: number; onReset: 
 	return (
 		<div className={`ck-graph-canvas${full ? ' is-full' : ''}`} style={full ? undefined : { height }}>
 			<div className="ck-tools">
-				<button type="button" className="ck-tool" onClick={onReset} title="Put moved nodes back">
-					Reset layout
+				<button type="button" className="ck-tool" onClick={onReset} title={t.resetLayoutHint}>
+					{t.resetLayout}
 				</button>
 				<button type="button" className="ck-tool" onClick={() => setFull((f) => !f)} aria-pressed={full}>
-					{full ? 'Close ✕' : 'Full screen ⤢'}
+					{full ? t.closeFullScreen : t.fullScreen}
 				</button>
 			</div>
 			<div key={full ? 'full' : 'inline'} className="ck-graph-flow">

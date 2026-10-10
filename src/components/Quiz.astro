@@ -1,9 +1,13 @@
 ---
 /**
- * Self-check multiple choice. Markup is rendered at build time (so the page is readable
- * without JS); the `lab-quiz` element only grades answers and keeps the score.
+ * Self-check multiple choice. Markup is rendered at build time (so the page is readable without JS); the
+ * `lab-quiz` element grades a question the moment an option is picked: the picked option (and the right one, if
+ * the pick was wrong) flash with the shared `lab-flash-*` animation, the question locks, and the reader gets the
+ * reasoning - why the picked option is right or wrong, why the right one is right - plus a link to the section that
+ * explains it. `ref` anchors on the same page are checked against the page's headings: a dead link fails the build.
  */
 import { correctIsLongest, giveawayLimit, questionErrors, type Question } from '../lib/quiz';
+import { courseIn, langOf } from '../lib/course';
 
 interface Props {
 	questions: Question[];
@@ -33,11 +37,28 @@ if (giveaways.length > giveawayLimit(questions.length)) {
 // making every build emit different HTML.
 const seed = [...JSON.stringify(questions)].reduce((h, c) => ((h << 5) + h + c.charCodeAt(0)) >>> 0, 5381);
 const gid = `quiz-${seed.toString(36)}`;
+
+const v = courseIn(langOf(Astro.url.pathname));
+const i18n = JSON.stringify({ score: v.t.score, answered: v.t.answered });
+
+// Each question's "read again" link: a heading of this page (checked) or a course link (resolved like Markdown).
+const headings = Astro.locals.starlightRoute?.headings ?? [];
+const refs = questions.map((item, i) => {
+	if (item.ref.startsWith('#')) {
+		const h = headings.find((x) => x.slug === item.ref.slice(1));
+		if (!h) throw new Error(`<Quiz> question ${i + 1}: ref "${item.ref}" is not a heading of this page (known: ${headings.map((x) => x.slug).join(', ')})`);
+		return { href: item.ref, label: v.tf('reviewSection', { title: h.text }) };
+	}
+	const href = v.resolveLink(item.ref, `<Quiz> question ${i + 1}`)!;
+	const slug = /^lesson:([^#]+)/.exec(item.ref)?.[1];
+	const title = slug ? v.lessonBySlug(slug)?.title : undefined;
+	return { href, label: v.tf('reviewSection', { title: title ?? item.ref }) };
+});
 ---
 
-<lab-quiz class="lab-card not-content" data-total={questions.length}>
-	<p class="lab-eyebrow">Self-check</p>
-	<p class="lab-card-title">Check your understanding</p>
+<lab-quiz class="lab-card not-content" data-total={questions.length} data-i18n={i18n}>
+	<p class="lab-eyebrow">{v.t.selfCheck}</p>
+	<p class="lab-card-title">{v.t.checkUnderstanding}</p>
 
 	{
 		questions.map((item, qi) => (
@@ -48,25 +69,26 @@ const gid = `quiz-${seed.toString(36)}`;
 				{item.options.map((opt, oi) => (
 					<label class="quiz-opt">
 						<input type="radio" name={`${gid}-${qi}`} value={oi} />
-						<span>{opt}</span>
+						<span>{opt.text}</span>
 					</label>
 				))}
-				<div class="lab-row quiz-actions">
-					<button type="button" class="lab-button" data-check>
-						Check
-					</button>
+				<div class="quiz-why" data-feedback hidden>
+					{item.options.map((opt, oi) => (
+						<p class={oi === item.answer ? 'is-right' : 'is-wrong'} data-why={oi} hidden>
+							<b>{opt.text}</b> — {opt.why}
+						</p>
+					))}
+					<a class="quiz-ref" href={refs[qi]!.href}>
+						{refs[qi]!.label}
+					</a>
 				</div>
-				<p class="lab-msg quiz-result" data-result role="status" hidden />
-				<p class="lab-muted quiz-explain" data-explain hidden>
-					{item.explain}
-				</p>
 			</fieldset>
 		))
 	}
 
 	<div class="lab-row quiz-foot">
-		<strong class="quiz-score" data-score aria-live="polite">Score: 0/{questions.length}</strong>
-		<button type="button" class="lab-button" data-reset>Reset</button>
+		<strong class="quiz-score" data-score aria-live="polite">{v.tf('score', { right: 0, total: questions.length })}</strong>
+		<button type="button" class="lab-button" data-reset>{v.t.reset}</button>
 	</div>
 </lab-quiz>
 
@@ -91,14 +113,18 @@ const gid = `quiz-${seed.toString(36)}`;
 		display: flex;
 		gap: 0.55rem;
 		align-items: flex-start;
-		padding: 0.4rem 0.6rem;
+		padding: 0.45rem 0.65rem;
 		margin-top: 0.3rem;
-		border: 1px solid var(--lab-border);
-		border-radius: 0.45rem;
+		border: 2px solid var(--lab-border);
+		border-radius: 0.5rem;
 		background: var(--lab-surface-2);
 		font-size: var(--sl-text-sm);
 		cursor: pointer;
 		overflow-wrap: anywhere;
+		transition: background 0.15s;
+	}
+	.quiz-opt:hover:has(input:enabled) {
+		background: color-mix(in srgb, var(--lab-accent) 8%, var(--lab-surface-2));
 	}
 	.quiz-opt input {
 		margin-top: 0.25rem;
@@ -108,25 +134,40 @@ const gid = `quiz-${seed.toString(36)}`;
 		outline: 2px solid var(--lab-accent);
 		outline-offset: 1px;
 	}
-	.quiz-opt.is-correct {
-		border-color: var(--lab-ok);
+	.quiz-opt:has(input:disabled) {
+		cursor: default;
 	}
+	/* After the flash fades, a quiet mark stays: the right option and a wrong pick. */
 	.quiz-opt.is-correct span::after {
 		content: ' ✓';
 		color: var(--lab-ok);
-	}
-	.quiz-opt.is-wrong {
-		border-color: var(--lab-err);
 	}
 	.quiz-opt.is-wrong span::after {
 		content: ' ✗';
 		color: var(--lab-err);
 	}
-	.quiz-actions {
-		margin-top: 0.6rem;
+	/* The reasoning after an answer: the picked option first, then (after a wrong pick) the right one. */
+	.quiz-why {
+		margin-top: 0.55rem;
+		padding: 0.55rem 0.75rem;
+		border-left: 3px solid var(--lab-border);
+		background: var(--lab-surface-2);
+		border-radius: 0 0.4rem 0.4rem 0;
+		font-size: var(--sl-text-sm);
 	}
-	.quiz-explain {
-		margin: 0.3rem 0 0;
+	.quiz-why p {
+		margin: 0 0 0.4rem;
+	}
+	.quiz-why p.is-right::before {
+		content: '✓ ';
+		color: var(--lab-ok);
+	}
+	.quiz-why p.is-wrong::before {
+		content: '✗ ';
+		color: var(--lab-err);
+	}
+	.quiz-ref {
+		font-size: var(--sl-text-xs);
 	}
 	.quiz-foot {
 		justify-content: space-between;
@@ -138,41 +179,44 @@ const gid = `quiz-${seed.toString(36)}`;
 
 <script>
 	import { LabElement, define } from '../lib/element';
+	import { flash } from '../lib/ui';
 
-	/** Grades each fieldset against its `data-answer` and aggregates the score (state lives in the DOM). */
+	/** Grades a fieldset as soon as one of its options is picked; the score aggregates (state lives in the DOM). */
 	class LabQuiz extends LabElement {
 		protected mount() {
+			this.on(this, 'change', (e) => {
+				const input = e.target as HTMLInputElement;
+				if (input.type === 'radio') this.grade(input.closest('fieldset') as HTMLFieldSetElement, input);
+			});
 			this.on(this, 'click', (e) => {
-				const target = e.target as HTMLElement;
-				const check = target.closest<HTMLElement>('[data-check]');
-				if (check) this.grade(check.closest('fieldset') as HTMLFieldSetElement);
-				else if (target.closest('[data-reset]')) this.reset();
+				if ((e.target as HTMLElement).closest('[data-reset]')) this.reset();
 			});
 		}
 
-		private grade(q: HTMLFieldSetElement): void {
-			const picked = q.querySelector<HTMLInputElement>('input:checked');
-			const result = q.querySelector<HTMLElement>('[data-result]')!;
-			result.hidden = false;
-			if (!picked) {
-				result.className = 'lab-msg quiz-result is-warn';
-				result.textContent = 'Choose an option first.';
-				return;
-			}
+		private grade(q: HTMLFieldSetElement, picked: HTMLInputElement): void {
+			if (q.dataset.state) return;
 			const answer = Number(q.dataset.answer);
 			const ok = Number(picked.value) === answer;
-			const inputs = [...q.querySelectorAll<HTMLInputElement>('input[type=radio]')];
-			inputs.forEach((input, i) => {
+			q.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach((input, i) => {
 				input.disabled = true;
 				const label = input.closest('label')!;
-				label.classList.toggle('is-correct', i === answer);
-				label.classList.toggle('is-wrong', input === picked && !ok);
+				if (i === answer) {
+					label.classList.add('is-correct');
+					flash(label, 'ok');
+				} else if (input === picked) {
+					label.classList.add('is-wrong');
+					flash(label, 'err');
+				}
 			});
 			q.dataset.state = ok ? 'correct' : 'wrong';
-			result.className = `lab-msg quiz-result ${ok ? 'is-ok' : 'is-err'}`;
-			result.textContent = ok ? 'Correct.' : 'Not quite. The correct answer is marked.';
-			q.querySelector<HTMLElement>('[data-explain]')!.hidden = false;
-			q.querySelector<HTMLButtonElement>('[data-check]')!.disabled = true;
+			// Reasoning: why the pick is right or wrong, and after a wrong pick why the right option is right.
+			const feedback = q.querySelector<HTMLElement>('[data-feedback]')!;
+			const picks = ok ? [picked.value] : [picked.value, String(answer)];
+			feedback.querySelectorAll<HTMLElement>('[data-why]').forEach((p) => (p.hidden = !picks.includes(p.dataset.why ?? '')));
+			// Picked option's reason first: move it to the top of the block.
+			const first = feedback.querySelector<HTMLElement>(`[data-why="${picked.value}"]`)!;
+			feedback.prepend(first);
+			feedback.hidden = false;
 			this.updateScore();
 		}
 
@@ -181,7 +225,7 @@ const gid = `quiz-${seed.toString(36)}`;
 			const right = this.querySelectorAll('fieldset[data-state=correct]').length;
 			const done = this.querySelectorAll('fieldset[data-state]').length;
 			this.querySelector('[data-score]')!.textContent =
-				`Score: ${right}/${total}` + (done < total ? ` (${done} answered)` : '');
+				this.text('score', { right, total }) + (done < total ? this.text('answered', { n: done }) : '');
 		}
 
 		private reset(): void {
@@ -190,11 +234,9 @@ const gid = `quiz-${seed.toString(36)}`;
 				q.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach((input) => {
 					input.checked = false;
 					input.disabled = false;
-					input.closest('label')!.classList.remove('is-correct', 'is-wrong');
+					input.closest('label')!.classList.remove('is-correct', 'is-wrong', 'lab-flash-ok', 'lab-flash-err');
 				});
-				q.querySelector<HTMLElement>('[data-result]')!.hidden = true;
-				q.querySelector<HTMLElement>('[data-explain]')!.hidden = true;
-				q.querySelector<HTMLButtonElement>('[data-check]')!.disabled = false;
+				q.querySelector<HTMLElement>('[data-feedback]')!.hidden = true;
 			});
 			this.updateScore();
 		}

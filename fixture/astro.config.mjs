@@ -11,6 +11,10 @@ export default defineCourse({
 	repo: 'https://github.com/ssoj13/course-kit',
 	course: new URL('./src/data/course.json', import.meta.url),
 	terms: new URL('./src/data/terms.json', import.meta.url),
+	languages: [
+		{ code: 'en', label: 'English' },
+		{ code: 'ru', label: 'Русский' },
+	],
 	vite: {
 		resolve: { alias: [{ find: /^course-kit\//, replacement: fileURLToPath(new URL('../src/', import.meta.url)) }] },
 	},

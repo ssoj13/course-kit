@@ -1,10 +1,11 @@
 ---
 /**
- * Course map: one table per module (global lesson number, linked title, summary), generated from course.json so
- * no page keeps a hand-maintained lesson list. Used by the roadmap (all modules) and by the module overview pages
- * (`module` = one module slug). Tables show the full lesson title; the short label is for compact navigation only.
+ * Course map: one table per module (global lesson number, linked title, summary), generated from course.json in the
+ * page's language, so no page keeps a hand-maintained lesson list. Used by the roadmap (all modules) and by the
+ * module overview pages (`module` = one module slug). Tables show the full lesson title; the short label is for
+ * compact navigation only.
  */
-import { href, moduleHref, modules } from '../lib/course';
+import { courseIn, langOf } from '../lib/course';
 
 interface Props {
 	/** Render only this module (slug); omit for the whole course. */
@@ -12,7 +13,8 @@ interface Props {
 }
 
 const { module } = Astro.props;
-const shown = module ? modules.filter((m) => m.slug === module) : modules;
+const v = courseIn(langOf(Astro.url.pathname));
+const shown = module ? v.modules.filter((m) => m.slug === module) : v.modules;
 if (module && !shown.length) throw new Error(`CourseMap: course.json has no module "${module}"`);
 ---
 
@@ -21,9 +23,9 @@ if (module && !shown.length) throw new Error(`CourseMap: course.json has no modu
 		<section class="course-map not-content">
 			{!module && (
 				<h3>
-					<a href={moduleHref(m.slug)}>
+					<a href={v.moduleHref(m.slug)}>
 						{m.num}. {m.title}
-						{m.optional && ' (optional)'}
+						{m.optional && ` ${v.t.optional}`}
 					</a>
 				</h3>
 			)}
@@ -31,9 +33,9 @@ if (module && !shown.length) throw new Error(`CourseMap: course.json has no modu
 			<table>
 				<thead>
 					<tr>
-						<th>#</th>
-						<th>Lesson</th>
-						<th>What it covers</th>
+						<th>{v.t.colNum}</th>
+						<th>{v.t.colLesson}</th>
+						<th>{v.t.colCovers}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -41,7 +43,7 @@ if (module && !shown.length) throw new Error(`CourseMap: course.json has no modu
 						<tr>
 							<td>{l.num}</td>
 							<td>
-								<a href={href(l.slug)}>{l.title}</a>
+								<a href={v.href(l.slug)}>{l.title}</a>
 							</td>
 							<td>{l.summary}</td>
 						</tr>

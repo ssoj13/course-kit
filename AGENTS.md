@@ -58,6 +58,25 @@ Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course page
 - Storage keys are prefixed with course.json `id` (all courses share the `<user>.github.io` origin).
 - Toolchain: bun 1.4.3.
 
+## Languages (i18n)
+
+- `defineCourse({ languages })`: first = default at the base path, others under `/<code>/` (Starlight locales,
+  `root` + codes). Overlays `course.<code>.json` / `terms.<code>.json` (data.mjs `localizeCourse/localizeTerms`):
+  texts only, keyed by slugs/ids, must be complete. Every language needs all lesson pages + `index.mdx`.
+- Engine interface texts: `src/i18n.mjs` (one table, tests enforce equal key sets and placeholders).
+- Language of a page = its URL (`langOf` in lib/course.ts); `courseIn(lang)` gives the course view (numbers, URLs,
+  texts, resolver); `graphIn(lang)` the term graph. Islands get `lang` as a prop; custom-element scripts get their
+  texts through `data-i18n` (LabElement `text()`).
+- Markdown links: the plugin picks the resolver by the file path (`content/docs/<code>/`).
+- Generated pages are injected once per language with the same entrypoint; one 404 (default language + links).
+- Progress keys are lesson slugs: shared by all languages.
+
+## Quiz model
+
+`{ q, options: [{ text, why }] x4, answer, ref }`: grading on click, shared `flash()` (lab.css: 1 s in, 5 s out),
+the picked option's `why` (and the right one's after a wrong pick), "read again" link from `ref` (`#anchor` is
+checked against the page headings at build time). No separate `explain`: the right option's `why` is it.
+
 ## TODO
 
 - [x] defineCourse, manifests + validation, links, generated pages, progress, quiz, term graph, MindMap, Roadmap

@@ -12,8 +12,9 @@ import { fileURLToPath } from 'node:url';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import { satteri } from '@astrojs/markdown-satteri';
-import { checkCourse, checkTerms } from './data.mjs';
+import { checkCourse, checkTerms, localizeCourse, localizeTerms } from './data.mjs';
 import { courseLinksPlugin, makeResolver } from './links.mjs';
+import { ui } from './i18n.mjs';
 
 const VIRTUAL_ID = 'virtual:course-kit/data';
 const SERVER_ID = 'virtual:course-kit/server';
@@ -38,7 +39,20 @@ const own = (p) => fileURLToPath(new URL(p, import.meta.url));
  * @property {string[]} [customCss] course stylesheets, loaded after the engine's
  * @property {Record<string, string>} [components] extra Starlight component overrides (engine overrides win on conflict)
  * @property {import('astro').AstroUserConfig['vite']} [vite] extra Vite config, merged by Astro
+ * @property {{ code: string, label: string }[]} [languages] languages of the course, the first one is the default
+ *   (served at the base path; the others under `/<code>/`). Default: English only. Every other language needs
+ *   `course.<code>.json` and `terms.<code>.json` next to the manifests, and its lessons in `content/docs/<code>/`.
  */
+
+/** @typedef {{ code: string, label: string, prefix: string }} Language */
+
+/**
+ * The translation overlay next to a manifest: `course.json` -> `course.<code>.json`.
+ * @param {URL} url @param {string} code
+ */
+function sibling(url, code) {
+	return new URL(url.href.replace(/\.json$/, `.${code}.json`));
+}
 
 /** @param {URL} url @param {string} what */
 function readJson(url, what) {
@@ -55,28 +69,56 @@ function readJson(url, what) {
  * @returns {import('astro').AstroUserConfig}
  */
 export function defineCourse(o) {
+	/** @type {Language[]} */
+	const languages = (o.languages ?? [{ code: 'en', label: 'English' }]).map((l, i) => ({ ...l, prefix: i === 0 ? '' : `/${l.code}` }));
+	for (const l of languages) ui(l.code); // the engine must have interface texts for every course language
+	const def = languages[0].code;
+
 	const course = checkCourse(readJson(o.course, 'course.json'));
 	const terms = checkTerms(readJson(o.terms, 'terms.json'), course);
-	const resolve = makeResolver(course, terms, o.pages ?? {}, o.base);
-	const data = { course, terms, site: { base: o.base, repo: o.repo, pages: o.pages ?? {} } };
+	/** @type {Record<string, import('./data.mjs').CourseJson>} */
+	const courses = { [def]: course };
+	/** @type {Record<string, import('./data.mjs').TermsJson>} */
+	const termsBy = { [def]: terms };
+	/** @type {URL[]} */
+	const overlays = [];
+	for (const { code } of languages.slice(1)) {
+		const cu = sibling(o.course, code);
+		const tu = sibling(o.terms, code);
+		overlays.push(cu, tu);
+		courses[code] = localizeCourse(readJson(cu, `course.${code}.json`), course, code);
+		termsBy[code] = localizeTerms(readJson(tu, `terms.${code}.json`), terms, code);
+	}
+	const resolvers = Object.fromEntries(
+		languages.map((l) => [l.code, makeResolver(courses[l.code], termsBy[l.code], o.pages ?? {}, o.base, l.prefix)]),
+	);
+	const data = { languages, courses, terms: termsBy, site: { base: o.base, repo: o.repo, pages: o.pages ?? {} } };
 	// Build-only values (filled in astro:config:setup). A separate module, so they can never reach a browser bundle.
 	const server = { root: '' };
 
-	let lessonNum = 0;
+	/** Sidebar label in the default language plus `translations` for the others (Starlight picks by language). */
+	const label = (/** @type {(code: string) => string} */ text) => ({
+		label: text(def),
+		translations: Object.fromEntries(languages.slice(1).map((l) => [l.code, text(l.code)])),
+	});
 	// One group per module: its generated overview page, then lessons with the GLOBAL lesson number and the
 	// optional `short` label (lib/course.ts derives the same numbers and labels for every other view).
+	let lessonNum = 0;
 	const moduleGroups = course.modules.map((m, i) => ({
-		label: `${i + 1}. ${m.title}${m.optional ? ' (optional)' : ''}`,
+		...label((c) => `${i + 1}. ${courses[c].modules[i].title}${m.optional ? ` ${ui(c).optional}` : ''}`),
 		items: [
-			{ label: 'Module overview', link: `/${m.slug}/`, attrs: { class: 'module-overview-link' } },
-			...m.lessons.map((l) => ({ label: `${++lessonNum}. ${l.short ?? l.title}`, slug: `${m.slug}/${l.slug}` })),
+			{ ...label((c) => ui(c).moduleOverview), link: `/${m.slug}/`, attrs: { class: 'module-overview-link' } },
+			...m.lessons.map((l, j) => {
+				const num = ++lessonNum;
+				return { ...label((c) => `${num}. ${courses[c].modules[i].lessons[j].short ?? courses[c].modules[i].lessons[j].title}`), slug: `${m.slug}/${l.slug}` };
+			}),
 		],
 	}));
 
 	return {
 		site: o.site,
 		base: o.base,
-		markdown: { processor: satteri({ mdastPlugins: [courseLinksPlugin(resolve)] }) },
+		markdown: { processor: satteri({ mdastPlugins: [courseLinksPlugin(resolvers, def)] }) },
 		vite: {
 			...o.vite,
 			plugins: [virtualModule(VIRTUAL_ID, data), virtualModule(SERVER_ID, server), ...(o.vite?.plugins ?? [])],
@@ -88,8 +130,13 @@ export function defineCourse(o) {
 		integrations: [
 			react(),
 			starlight({
-				title: course.title,
+				title: Object.fromEntries(languages.map((l) => [l.code, courses[l.code].title])),
 				description: course.description,
+				// Default language at the base path ("root"), the others under /<code>/.
+				...(languages.length > 1 && {
+					defaultLocale: 'root',
+					locales: Object.fromEntries(languages.map((l, i) => [i === 0 ? 'root' : l.code, { label: l.label, lang: l.code }])),
+				}),
 				social: [{ icon: 'github', label: 'GitHub', href: o.repo }],
 				editLink: { baseUrl: `${o.repo.replace(/\/$/, '')}/edit/main/` },
 				customCss: [own('./styles/lab.css'), ...(o.customCss ?? [])],
@@ -104,24 +151,29 @@ export function defineCourse(o) {
 				lastUpdated: true,
 				// Lessons explain code line by line; wrapped lines read better than a horizontal scrollbar.
 				expressiveCode: { defaultProps: { wrap: true } },
+				// `link` items are prefixed with the page's language by Starlight, `slug` items resolve per language.
 				sidebar: [
-					{ label: 'Home', link: '/' },
-					{ label: 'Course roadmap', link: '/roadmap/' },
+					{ ...label((c) => ui(c).home), link: '/' },
+					{ ...label((c) => ui(c).roadmap), link: '/roadmap/' },
 					...moduleGroups,
-					{ label: 'Reference', items: [{ label: 'Glossary', link: '/glossary/' }, ...(o.reference ?? [])] },
+					{ ...label((c) => ui(c).reference), items: [{ ...label((c) => ui(c).glossary), link: '/glossary/' }, ...(o.reference ?? [])] },
 				],
 			}),
 			{
 				name: PKG,
 				hooks: {
 					'astro:config:setup': ({ config, injectRoute, addWatchFile }) => {
-						addWatchFile(o.course);
-						addWatchFile(o.terms);
+						for (const u of [o.course, o.terms, ...overlays]) addWatchFile(u);
 						server.root = fileURLToPath(config.root);
-						checkLessonFiles(course, new URL('content/docs/', config.srcDir));
-						injectRoute({ pattern: '/[module]', entrypoint: own('./pages/module.astro') });
-						injectRoute({ pattern: '/roadmap', entrypoint: own('./pages/roadmap.astro') });
-						injectRoute({ pattern: '/glossary', entrypoint: own('./pages/glossary.astro') });
+						const docs = new URL('content/docs/', config.srcDir);
+						for (const l of languages) checkLessonFiles(course, l.prefix ? new URL(`${l.code}/`, docs) : docs);
+						// Generated pages exist in every language; each page reads its language from its URL.
+						for (const l of languages) {
+							injectRoute({ pattern: `${l.prefix}/[module]`, entrypoint: own('./pages/module.astro') });
+							injectRoute({ pattern: `${l.prefix}/roadmap`, entrypoint: own('./pages/roadmap.astro') });
+							injectRoute({ pattern: `${l.prefix}/glossary`, entrypoint: own('./pages/glossary.astro') });
+						}
+						// GitHub Pages serves one 404.html for every path, so there is one 404 page (in all languages).
 						injectRoute({ pattern: '/404', entrypoint: own('./pages/404.astro') });
 					},
 				},
@@ -131,19 +183,18 @@ export function defineCourse(o) {
 }
 
 /**
- * Every lesson in course.json must have its page (`<docs>/<module>/<lesson>.md[x]`): a missing file would
+ * The home page and every lesson in course.json must have a page (`<docs>/index.md[x]`,
+ * `<docs>/<module>/<lesson>.md[x]`), in every language: a missing file would
  * otherwise only show up as a 404 behind a sidebar link.
  * @param {import('./data.mjs').CourseJson} course
  * @param {URL} docs
  */
 function checkLessonFiles(course, docs) {
-	const missing = course.modules.flatMap((m) =>
-		m.lessons
-			.map((l) => `${m.slug}/${l.slug}`)
-			.filter((p) => !['.mdx', '.md'].some((ext) => existsSync(new URL(p + ext, docs)))),
+	const missing = ['index', ...course.modules.flatMap((m) => m.lessons.map((l) => `${m.slug}/${l.slug}`))].filter(
+		(p) => !['.mdx', '.md'].some((ext) => existsSync(new URL(p + ext, docs))),
 	);
 	if (missing.length) {
-		throw new Error(`course-kit: course.json lessons without a page in ${fileURLToPath(docs)}:\n  - ${missing.join('\n  - ')}`);
+		throw new Error(`course-kit: pages missing in ${fileURLToPath(docs)}:\n  - ${missing.join('\n  - ')}`);
 	}
 }
 

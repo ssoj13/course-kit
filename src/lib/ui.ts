@@ -26,6 +26,16 @@ export function showErr(box: HTMLElement, text: string): void {
 	showMsg(box, text, 'err');
 }
 
+/**
+ * Feedback flash shared by every widget: the element's border glows green (`ok`) or red (`err`), rising over 1 s and
+ * fading over 5 s (`.lab-flash-*` in lab.css). Re-triggers on repeated calls.
+ */
+export function flash(el: HTMLElement, kind: 'ok' | 'err'): void {
+	el.classList.remove('lab-flash-ok', 'lab-flash-err');
+	void el.offsetWidth; // restart the CSS animation if the same class is applied again
+	el.classList.add(`lab-flash-${kind}`);
+}
+
 /** One `.lab-stat` tile: big value over a small label. */
 export function tile(value: string, label: string): HTMLDivElement {
 	const d = h('div', 'lab-stat');

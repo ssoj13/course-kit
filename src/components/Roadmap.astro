@@ -5,7 +5,9 @@
  * engine needed for a depth-2 tree) keeps it narrow enough to read at full size in the content column.
  */
 import RoadmapView, { type RoadEdge, type RoadNode } from './graph/RoadmapView.tsx';
-import { href, moduleHref, modules } from '../lib/course';
+import { courseIn, langOf } from '../lib/course';
+
+const v = courseIn(langOf(Astro.url.pathname));
 
 const MOD_W = 330;
 const LES_W = 300;
@@ -19,13 +21,13 @@ const nodes: RoadNode[] = [];
 const edges: RoadEdge[] = [];
 let y = 0;
 let prev: string | undefined;
-for (const m of modules) {
+for (const m of v.modules) {
 	const id = `m:${m.slug}`;
 	nodes.push({
 		id,
 		kind: 'module',
 		label: `${m.num}. ${m.title}`,
-		href: moduleHref(m.slug),
+		href: v.moduleHref(m.slug),
 		slug: '',
 		lessons: m.lessons.map((l) => l.slug),
 		optional: m.optional,
@@ -42,7 +44,7 @@ for (const m of modules) {
 			id: `l:${l.slug}`,
 			kind: 'lesson',
 			label: `${l.num}. ${l.label}`,
-			href: href(l.slug),
+			href: v.href(l.slug),
 			slug: l.slug,
 			lessons: [],
 			optional: l.optional,
@@ -61,9 +63,9 @@ const height = Math.min(820, y + 40);
 
 <figure class="ck-roadmap not-content">
 	<div style={`min-height:${height + 2}px`}>
-		<RoadmapView client:only="react" nodes={nodes} edges={edges} height={height} />
+		<RoadmapView client:only="react" lang={v.lang} nodes={nodes} edges={edges} height={height} />
 	</div>
-	<figcaption>Modules run top to bottom; each module's lessons follow it. Completed lessons turn green.</figcaption>
+	<figcaption>{v.t.roadmapCaption}</figcaption>
 </figure>
 
 <style>

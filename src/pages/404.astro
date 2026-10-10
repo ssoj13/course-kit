@@ -1,24 +1,29 @@
 ---
 /**
- * Custom 404 (Starlight's own route is disabled via `disable404Route`). GitHub Pages serves this file at any
- * missing path depth, so links must be absolute and include the base path.
+ * Custom 404 (Starlight's own route is disabled via `disable404Route`). GitHub Pages serves this one file at any
+ * missing path of any language, so it is in the default language and links to every language's home page; links
+ * are absolute and include the base path.
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import { href, lessons, pageHref } from '../lib/course';
+import { DEFAULT_LANG, LANGUAGES, courseIn } from '../lib/course';
+
+const v = courseIn(DEFAULT_LANG);
+const others = LANGUAGES.slice(1).map((l) => ({ text: l.label, link: courseIn(l.code).pageHref(''), variant: 'minimal' as const }));
 ---
 
 <StarlightPage
 	frontmatter={{
-		title: 'Page not found',
+		title: v.t.notFound,
 		template: 'splash',
 		editUrl: false,
 		pagefind: false,
 		hero: {
-			title: 'Page not found',
-			tagline: 'This page does not exist. Lesson URLs follow the pattern module/lesson/ - see the roadmap for the full list.',
+			title: v.t.notFound,
+			tagline: v.t.notFoundTagline,
 			actions: [
-				{ text: 'Start the course', link: href(lessons[0]!.slug), icon: 'right-arrow' },
-				{ text: 'Course roadmap', link: pageHref('roadmap'), variant: 'minimal' },
+				{ text: v.t.startCourse, link: v.href(v.lessons[0]!.slug), icon: 'right-arrow' },
+				{ text: v.t.roadmap, link: v.pageHref('roadmap'), variant: 'minimal' },
+				...others,
 			],
 		},
 	}}

@@ -263,3 +263,29 @@
 .sidebar-content a.module-overview-link[aria-current='page'] {
 	color: var(--sl-color-text-invert);
 }
+
+/*
+ * Feedback flash (lib/ui.ts `flash()`): a green or red border that rises over 1 s and fades over 5 s, the same in
+ * every widget. The element needs a border of its own; the animation only changes its color and adds a soft glow.
+ */
+.lab-flash-ok {
+	--lab-flash: var(--lab-ok);
+	animation: lab-flash 6s ease-out forwards;
+}
+.lab-flash-err {
+	--lab-flash: var(--lab-err);
+	animation: lab-flash 6s ease-out forwards;
+}
+@keyframes lab-flash {
+	16.7% {
+		border-color: var(--lab-flash);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--lab-flash) 30%, transparent);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.lab-flash-ok,
+	.lab-flash-err {
+		animation: none;
+		border-color: var(--lab-flash);
+	}
+}

@@ -1,0 +1,28 @@
+---
+title: Урок первый
+---
+import MindMap from 'course-kit/components/MindMap.astro';
+import Term from 'course-kit/components/Term.astro';
+import Quiz from 'course-kit/components/Quiz.astro';
+
+Дальше [урок второй](lesson:two), [карта курса](page:roadmap), термин [альфа](term:alpha) и <Term id="beta" />.
+
+## Карта
+
+<MindMap />
+
+<Quiz
+	questions={[
+		{
+			q: 'На чём построена альфа?',
+			options: [
+				{ text: 'На бете', why: 'На карте связь идёт от беты вниз к альфе.' },
+				{ text: 'На гамме', why: 'Гамма — разновидность альфы, она ниже альфы, а не под ней в основании.' },
+				{ text: 'На дельте', why: 'Дельты в этом курсе нет.' },
+				{ text: 'Ни на чём', why: 'У альфы есть основа — бета.' },
+			],
+			answer: 0,
+			ref: '#карта',
+		},
+	]}
+/>

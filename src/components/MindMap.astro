@@ -1,22 +1,23 @@
 ---
 /**
- * Mind map of the term graph. Selects a subgraph (lib/graph.ts), lays it out at build time (lib/layout.ts) and
- * hands the finished picture to the GraphView island. The same subgraph is printed as a text list, readable
- * without JS and by screen readers.
+ * Mind map of the term graph, in the page's language. Selects a subgraph (lib/graph.ts), lays it out at build time
+ * (lib/layout.ts: foundations on top, rows left to right in course order) and hands the picture to the GraphView
+ * island. The same subgraph is printed as a text list, readable without JS and by screen readers.
  *
  * Usage in MDX:
- *   <MindMap />                              current lesson's terms and their neighbors
+ *   <MindMap />                              current lesson's terms and their neighbours
  *   <MindMap lesson="instance" />            another lesson's map
  *   <MindMap term="device" />                one hop around a term (`hops` widens it)
  *   <MindMap term="device" mode="genealogy" /> what the term is built on, down to the roots
  *   <MindMap term="instance" mode="unlocks" /> everything built on the term
  *   <MindMap mode="all" />                   the whole graph
  */
-import GraphView, { EDGE_STYLE, type ViewEdge, type ViewNode } from './graph/GraphView.tsx';
+import GraphView, { type ViewEdge, type ViewNode } from './graph/GraphView.tsx';
 import { HIERARCHY, ancestors, descendants, everything, lessonMap, neighborhood, type EdgeType, type SubGraph } from '../lib/graph';
-import { graph } from '../lib/terms';
+import { graphIn } from '../lib/terms';
 import { canvasHeight, layout } from '../lib/layout';
-import { href, lessonByPath, lessonBySlug, resolveLink } from '../lib/course';
+import { courseIn, langOf } from '../lib/course';
+import { REL_KEY } from '../i18n.mjs';
 import { EDGE_TYPES } from '../data.mjs';
 
 interface Props {
@@ -28,8 +29,10 @@ interface Props {
 	caption?: string;
 }
 
+const v = courseIn(langOf(Astro.url.pathname));
+const graph = graphIn(v.lang);
 const { term, mode = 'around', hops = 1, caption } = Astro.props;
-const lesson = Astro.props.lesson ?? (term || mode === 'all' ? undefined : lessonByPath(Astro.locals.starlightRoute?.id ?? '')?.slug);
+const lesson = Astro.props.lesson ?? (term || mode === 'all' ? undefined : v.lessonByPath(Astro.locals.starlightRoute?.id ?? '')?.slug);
 
 let sub: SubGraph;
 if (mode === 'all') sub = everything(graph);
@@ -38,7 +41,7 @@ else if (lesson) sub = lessonMap(graph, lesson);
 else throw new Error('<MindMap>: pass `term`, `lesson` or mode="all" (or use it on a lesson page)');
 
 // Course position of a term (its lesson number; untaught terms last), for left-to-right order inside a row.
-const courseOrder = (lessonSlug?: string) => (lessonSlug ? (lessonBySlug(lessonSlug)?.num ?? 1e6) : 1e6);
+const courseOrder = (lessonSlug?: string) => (lessonSlug ? (v.lessonBySlug(lessonSlug)?.num ?? 1e6) : 1e6);
 // Foundations on top: a hierarchy relation `from -> to` ("device is built on physical device") puts `to` above.
 const laid = layout({
 	nodes: sub.terms.map((t, i) => ({ id: t.id, label: t.label, order: courseOrder(t.lesson) * 1000 + i })),
@@ -51,15 +54,15 @@ const layerLabel = (id: string) => graph.layers[graph.layerIndex.get(id) ?? 0]?.
 
 const nodes: ViewNode[] = sub.terms.map((t) => {
 	const p = placed.get(t.id)!;
-	const taught = t.lesson ? lessonBySlug(t.lesson) : undefined;
+	const taught = t.lesson ? v.lessonBySlug(t.lesson) : undefined;
 	return {
 		id: t.id,
 		label: t.label,
 		def: t.def,
 		layer: graph.layerIndex.get(t.layer) ?? 0,
 		layerLabel: layerLabel(t.layer),
-		href: taught ? href(taught.slug) : resolveLink(`term:${t.id}`)!,
-		hrefLabel: taught ? `Lesson ${taught.num}: ${taught.title} →` : 'Glossary entry →',
+		href: taught ? v.href(taught.slug) : v.resolveLink(`term:${t.id}`)!,
+		hrefLabel: taught ? v.tf('lessonLink', { n: taught.num, title: taught.title }) : v.t.glossaryLink,
 		x: p.x,
 		y: p.y,
 		w: p.w,
@@ -79,11 +82,11 @@ const height = canvasHeight(laid);
 
 <figure class="ck-mindmap not-content">
 	<div class="ck-mindmap-frame" style={`min-height:${height + 120}px`}>
-		<GraphView client:only="react" nodes={nodes} edges={edges} height={height} legend={legend} layers={legendLayers} />
+		<GraphView client:only="react" lang={v.lang} nodes={nodes} edges={edges} height={height} legend={legend} layers={legendLayers} />
 	</div>
 	{caption && <figcaption>{caption}</figcaption>}
 	<details class="ck-mindmap-text">
-		<summary>This map as text</summary>
+		<summary>{v.t.mapAsText}</summary>
 		<ul>
 			{sub.terms.map((t) => <li><b>{t.label}</b>: {t.def}</li>)}
 		</ul>
@@ -92,7 +95,7 @@ const height = canvasHeight(laid);
 				<ul>
 					{edges.map((e) => (
 						<li>
-							{byId.get(e.from)} {e.label ?? EDGE_STYLE[e.type].text} {byId.get(e.to)}
+							{byId.get(e.from)} {e.label ?? v.t[REL_KEY[e.type].rel]} {byId.get(e.to)}
 						</li>
 					))}
 				</ul>

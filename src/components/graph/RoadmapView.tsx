@@ -76,7 +76,7 @@ function RoadNodeView({ data }: NodeProps<Node<Data>>) {
 
 const nodeTypes = { road: RoadNodeView };
 
-export default function RoadmapView({ nodes, edges, height }: { nodes: RoadNode[]; edges: RoadEdge[]; height: number }) {
+export default function RoadmapView({ lang, nodes, edges, height }: { lang: string; nodes: RoadNode[]; edges: RoadEdge[]; height: number }) {
 	const [progress, setProgress] = useState<Progress>({});
 	useEffect(() => {
 		setProgress(readProgress());
@@ -114,7 +114,7 @@ export default function RoadmapView({ nodes, edges, height }: { nodes: RoadNode[
 
 	return (
 		<div className="ck-graph">
-			<Frame height={height} onReset={reset}>
+			<Frame lang={lang} height={height} onReset={reset}>
 				<ReactFlow
 					nodes={rfNodes}
 					edges={rfEdges}

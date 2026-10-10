@@ -97,9 +97,9 @@ export function everything(g: TermGraph): SubGraph {
 	return { terms: [...g.terms], edges: [...g.edges] };
 }
 
-/** Terms sorted for the glossary: by label, case-insensitive. */
-export function sortedTerms(g: TermGraph): TermJson[] {
-	return [...g.terms].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+/** Terms sorted for the glossary: by label in the alphabet of `lang`, case-insensitive. */
+export function sortedTerms(g: TermGraph, lang: string): TermJson[] {
+	return [...g.terms].sort((a, b) => a.label.localeCompare(b.label, lang, { sensitivity: 'base' }));
 }
 
 /** Direct hierarchy parents of a term ("built on" these), for glossary entries and tooltips. */
