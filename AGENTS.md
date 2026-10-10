@@ -65,6 +65,10 @@ Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course page
 - [ ] Non-hierarchy edges (`related`, `uses`) can pass straight under a node in a vertical chain; route them
       around (side handles or bezier offset)
 - [ ] Roadmap: verify sizing with a real many-module course (vulkan_en)
-- [ ] CI: test + fixture build + check on push
+- [x] CI: test + fixture build + check on push (green on ubuntu, real Node: the .mjs config side works)
+- [x] Graph readability: `lib/fit.ts` (FIT_ZOOM 0.75-1.2, alignTop: start at the root), `canvasHeight()` in
+      layout.ts, `graph/Frame.tsx` full-screen toggle, layout edges accept `minlen`
+- [ ] Direction conventions differ: term maps put foundations at the bottom (depth stack), object trees (vulkan_en
+      ObjectGraph) put the root at the top. Decide with the user whether to unify.
 - [ ] Course-wide quiz lint (vllm_en had tests/js/quiz-lint.test.ts): giveaway share via `correctIsLongest`
 - [ ] Migration of vllm_en (progress keys were `vllm-course:` prefixed; its widgets) and math_en
