@@ -8,6 +8,7 @@
     ".": "./src/index.mjs",
     "./data.mjs": "./src/data.mjs",
     "./links.mjs": "./src/links.mjs",
+    "./i18n.mjs": "./src/i18n.mjs",
     "./lib/*": "./src/lib/*",
     "./components/*": "./src/components/*",
     "./pages/*": "./src/pages/*",
