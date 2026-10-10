@@ -76,6 +76,9 @@ Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course page
 `{ q, options: [{ text, why }] x4, answer, ref }`: grading on click, shared `flash()` (lab.css: 1 s in, 5 s out),
 the picked option's `why` (and the right one's after a wrong pick), "read again" link from `ref` (`#anchor` is
 checked against the page headings at build time). No separate `explain`: the right option's `why` is it.
+Rules: `quizErrors(questions)` in lib/quiz.ts is the single rule set (Quiz.astro at build time, course lints):
+structure per question, and each length strategy ("pick the longest" / "pick the shortest", `lengthGuess`) may
+find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
 
 ## TODO
 
@@ -93,5 +96,6 @@ checked against the page headings at build time). No separate `explain`: the rig
 - [x] Node-editor look (graph.css): cards with colored title bar + ports, bezier wires, selected node's wires lit,
       secondary relations faint; nodes draggable (`graph/flow.ts` useFlowNodes keeps drags across data updates,
       Frame "Reset layout"); edge labels live in the info panel, not on the canvas.
-- [ ] Course-wide quiz lint (vllm_en had tests/js/quiz-lint.test.ts): giveaway share via `correctIsLongest`
+- [x] Course-wide quiz lint: courses call `quizErrors` (vulkan_en scripts/lint-content.ts); longest AND shortest
+      giveaways limited (v0.3.2)
 - [ ] Migration of vllm_en (progress keys were `vllm-course:` prefixed; its widgets) and math_en

@@ -6,7 +6,7 @@
  * reasoning - why the picked option is right or wrong, why the right one is right - plus a link to the section that
  * explains it. `ref` anchors on the same page are checked against the page's headings: a dead link fails the build.
  */
-import { correctIsLongest, giveawayLimit, questionErrors, type Question } from '../lib/quiz';
+import { quizErrors, type Question } from '../lib/quiz';
 import { courseIn, langOf } from '../lib/course';
 
 interface Props {
@@ -15,23 +15,10 @@ interface Props {
 
 const { questions } = Astro.props;
 
-// Content mistakes must fail the build, not silently ship a quiz that can never be answered right.
-// The rules live in lib/quiz.ts so a course-wide lint can apply the same ones.
-if (!Array.isArray(questions) || questions.length === 0) {
-	throw new Error('<Quiz>: `questions` must be a non-empty array.');
-}
-questions.forEach((item, i) => {
-	const errs = questionErrors(item);
-	if (errs.length) throw new Error(`<Quiz> question ${i + 1} ("${String(item?.q).slice(0, 40)}"): ${errs.join('; ')}.`);
-});
-// "Pick the longest option" must not work: at most a third of a quiz may have the correct answer as the longest.
-const giveaways = questions.filter(correctIsLongest);
-if (giveaways.length > giveawayLimit(questions.length)) {
-	throw new Error(
-		`<Quiz>: ${giveaways.length}/${questions.length} questions have the correct option as the longest (limit ${giveawayLimit(questions.length)}): ` +
-			giveaways.map((q) => `"${q.q.slice(0, 50)}"`).join(', '),
-	);
-}
+// Content mistakes must fail the build, not silently ship a quiz that can never be answered right or that option
+// lengths give away. The rules live in lib/quiz.ts so a course-wide lint applies the same ones.
+const errs = quizErrors(questions);
+if (errs.length) throw new Error(`<Quiz>:\n  - ${errs.join('\n  - ')}`);
 
 // Deterministic id (djb2 of the content) keeps radio groups unique per quiz without
 // making every build emit different HTML.

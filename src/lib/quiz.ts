@@ -1,6 +1,6 @@
 /**
  * Self-check quiz model and rules: <Quiz> validates every question at build time (a broken quiz fails the build),
- * including the per-quiz limit on the "correct option is the longest" giveaway.
+ * including the per-quiz limit on answers that their length alone gives away (longest or shortest option).
  *
  * A quiz teaches, not just grades: every option carries `why` - why this option is right, or why it is wrong (a
  * misconception named and corrected) - and every question points with `ref` to the section that explains it.
@@ -52,14 +52,39 @@ export function questionErrors(item: unknown): string[] {
 /** Length in code points, so a non-BMP character counts once. */
 const len = (s: string): number => [...s].length;
 
+/** Test-taking strategies that pick an option by its length alone. */
+export type LengthGuess = 'longest' | 'shortest';
+
 /**
- * True when the correct option is strictly longer than every distractor: the classic test-taking
- * giveaway (pick the longest answer) that the quiz rules limit.
+ * The length strategy that finds this question's answer: the correct option is strictly longer (or strictly
+ * shorter) than every distractor. `null` when length alone does not single it out.
  */
-export function correctIsLongest(q: Question): boolean {
+export function lengthGuess(q: Question): LengthGuess | null {
 	const right = len(q.options[q.answer]!.text);
-	return q.options.every((o, i) => i === q.answer || len(o.text) < right);
+	const others = q.options.filter((_, i) => i !== q.answer).map((o) => len(o.text));
+	if (others.every((l) => l < right)) return 'longest';
+	if (others.every((l) => l > right)) return 'shortest';
+	return null;
 }
 
-/** Per quiz: at most one third of the questions may have the longest-correct giveaway (floor, min 1). */
+/** Per quiz and per strategy: it may find at most a third of the answers (floor, min 1) - no better than luck. */
 export const giveawayLimit = (questions: number): number => Math.max(1, Math.floor(questions / 3));
+
+/**
+ * Every problem of a whole quiz (empty = valid): each question's structure, then each length strategy that would
+ * find more answers than `giveawayLimit`. The single rule set for <Quiz> at build time and for course lints.
+ */
+export function quizErrors(questions: unknown): string[] {
+	if (!Array.isArray(questions) || questions.length === 0) return ['`questions` must be a non-empty array'];
+	const errs = questions.flatMap((item, i) => questionErrors(item).map((e) => `question ${i + 1}: ${e}`));
+	if (errs.length) return errs;
+	const qs = questions as Question[];
+	const limit = giveawayLimit(qs.length);
+	for (const guess of ['longest', 'shortest'] as const) {
+		const hits = qs.filter((q) => lengthGuess(q) === guess);
+		if (hits.length > limit) {
+			errs.push(`${hits.length}/${qs.length} questions have the correct option as the ${guess} (limit ${limit}): ${hits.map((q) => `"${q.q.slice(0, 50)}"`).join(', ')}`);
+		}
+	}
+	return errs;
+}

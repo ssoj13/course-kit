@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { checkCourse, checkTerms, edgeKey, localizeCourse, localizeTerms } from '../src/data.mjs';
 import { langOfFile, makeResolver } from '../src/links.mjs';
 import { UI, fmt, ui } from '../src/i18n.mjs';
-import { correctIsLongest, questionErrors, type Question } from '../src/lib/quiz';
+import { lengthGuess, questionErrors, quizErrors, type Question } from '../src/lib/quiz';
 
 const course = checkCourse({
 	id: 'demo',
@@ -104,8 +104,15 @@ describe('quiz model', () => {
 		bad.ref = 'section';
 		expect(questionErrors(bad).join('; ')).toMatch(/option 3: empty `why`.*`ref` must be/);
 	});
-	test('longest-option giveaway is measured on option texts', () => {
-		expect(correctIsLongest(q)).toBe(false);
-		expect(correctIsLongest({ ...q, answer: 1 })).toBe(true);
+	test('length giveaways are measured on option texts, both ways', () => {
+		expect(lengthGuess(q)).toBeNull();
+		expect(lengthGuess({ ...q, answer: 1 })).toBe('longest');
+		expect(lengthGuess({ ...q, answer: 3 })).toBe('shortest');
+	});
+	test('a quiz fails when one length strategy finds more than a third of the answers', () => {
+		expect(quizErrors([q, q, q])).toEqual([]);
+		expect(quizErrors([q, { ...q, answer: 3 }, q])).toEqual([]);
+		expect(quizErrors([q, { ...q, answer: 3 }, { ...q, answer: 3 }]).join()).toMatch(/2\/3 .* shortest \(limit 1\)/);
+		expect(quizErrors([{ ...q, ref: 'x' }]).join()).toMatch(/question 1: `ref` must be/);
 	});
 });

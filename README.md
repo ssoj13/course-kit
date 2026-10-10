@@ -23,7 +23,7 @@ its own widgets) and two JSON manifests. course-kit turns them into a full site:
 - **Progress and quizzes.** Progress is stored per browser and shared by all languages. It shows in the sidebar
   and on the roadmap, with export and import. A quiz grades the moment an option is picked: the option flashes,
   the reader gets the reason why it is right or wrong, and a link to the section that explains it. Quizzes are
-  validated at build time, including dead section links and a limit on "the longest option is the answer".
+  validated at build time, including dead section links and a limit on answers that option length gives away (the longest or the shortest option is the answer).
 
 ## Use it in a course
 
