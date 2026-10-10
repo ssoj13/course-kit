@@ -18,6 +18,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './graph.css';
+import { Frame } from './Frame';
 import type { EdgeType } from '../../lib/graph';
 
 export interface ViewNode {
@@ -123,7 +124,7 @@ export default function GraphView({ nodes, edges, height, legend, layers }: Grap
 
 	return (
 		<div className="ck-graph">
-			<div className="ck-graph-canvas" style={{ height }}>
+			<Frame height={height}>
 				<ReactFlow
 					nodes={rfNodes}
 					edges={rfEdges}
@@ -145,7 +146,7 @@ export default function GraphView({ nodes, edges, height, legend, layers }: Grap
 					<Background gap={24} size={1} />
 					<Controls showInteractive={false} />
 				</ReactFlow>
-			</div>
+			</Frame>
 			<div className="ck-graph-info" aria-live="polite">
 				{cur ? (
 					<>

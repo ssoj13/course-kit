@@ -15,7 +15,8 @@ import { HIERARCHY, type EdgeType } from './graph';
 /** What the layout needs: any node/edge set (term subgraphs, but also course-specific graphs such as object trees). */
 export interface LayoutInput {
 	terms: readonly { id: string; label: string }[];
-	edges: readonly { from: string; to: string; type: EdgeType }[];
+	/** `minlen`: minimum number of ranks the edge spans (default 1); > 1 pushes the target further down. */
+	edges: readonly { from: string; to: string; type: EdgeType; minlen?: number }[];
 }
 
 export interface Placed {
@@ -47,7 +48,7 @@ export function layout(sub: LayoutInput): Layout {
 	g.setDefaultEdgeLabel(() => ({}));
 	for (const t of sub.terms) g.setNode(t.id, { width: nodeWidth(t.label), height: NODE_H });
 	// Hierarchy edges drive the ranks; the others are drawn but must not stretch the layers.
-	for (const e of sub.edges) if (HIERARCHY.includes(e.type)) g.setEdge(e.from, e.to);
+	for (const e of sub.edges) if (HIERARCHY.includes(e.type)) g.setEdge(e.from, e.to, { minlen: e.minlen ?? 1 });
 	dagreLayout(g);
 	const nodes = sub.terms.map((t) => {
 		const n = g.node(t.id);

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Background, Controls, Handle, Position, ReactFlow, type Edge, type Node, type NodeProps } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './graph.css';
+import { Frame } from './Frame';
 import { KEYS, watch } from '../../lib/store';
 import { readProgress, type Progress } from '../../lib/progress';
 
@@ -111,7 +112,7 @@ export default function RoadmapView({ nodes, edges, height }: { nodes: RoadNode[
 
 	return (
 		<div className="ck-graph">
-			<div className="ck-graph-canvas" style={{ height }}>
+			<Frame height={height}>
 				<ReactFlow
 					nodes={rfNodes}
 					edges={rfEdges}
@@ -130,7 +131,7 @@ export default function RoadmapView({ nodes, edges, height }: { nodes: RoadNode[
 					<Background gap={24} size={1} />
 					<Controls showInteractive={false} />
 				</ReactFlow>
-			</div>
+			</Frame>
 		</div>
 	);
 }

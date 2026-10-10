@@ -171,3 +171,32 @@
 .ck-branch path {
 	stroke-dasharray: 5 4;
 }
+
+/* Frame (Frame.tsx): inline canvas, or the whole viewport in full-screen mode. */
+.ck-graph-flow {
+	position: absolute;
+	inset: 0;
+}
+.ck-graph-canvas.is-full {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	height: auto;
+	background: var(--sl-color-gray-6);
+}
+.ck-full-btn {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	z-index: 5;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.4rem;
+	background: var(--sl-color-black);
+	color: var(--sl-color-white);
+	font-size: var(--sl-text-xs);
+	padding: 0.25rem 0.55rem;
+	cursor: pointer;
+}
+.ck-full-btn:hover {
+	border-color: var(--sl-color-accent);
+}
