@@ -11,6 +11,7 @@
  */
 import { graphlib, layout as dagreLayout } from '@dagrejs/dagre';
 import { HIERARCHY, type EdgeType } from './graph';
+import { FIT_ZOOM } from './fit';
 
 /** What the layout needs: any node/edge set (term subgraphs, but also course-specific graphs such as object trees). */
 export interface LayoutInput {
@@ -35,6 +36,15 @@ export interface Layout {
 }
 
 const NODE_H = 40;
+
+/** Width of the content column the inline canvas lives in (Starlight's content width at desktop size). */
+const COLUMN_PX = 620;
+
+/** Canvas height that shows the laid-out graph at the zoom `fitView` will pick, within sane page limits. */
+export function canvasHeight(l: Pick<Layout, 'width' | 'height'>, max = 640): number {
+	const zoom = Math.min(FIT_ZOOM.max, Math.max(FIT_ZOOM.min, COLUMN_PX / Math.max(1, l.width)));
+	return Math.round(Math.min(max, Math.max(240, l.height * zoom + 70)));
+}
 
 /**
  * Node width from its label (no DOM at build time): ~7.5 px per character at the node font size plus padding.

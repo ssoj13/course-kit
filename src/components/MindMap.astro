@@ -15,7 +15,7 @@
 import GraphView, { EDGE_STYLE, type ViewEdge, type ViewNode } from './graph/GraphView.tsx';
 import { ancestors, descendants, everything, lessonMap, neighborhood, type EdgeType, type SubGraph } from '../lib/graph';
 import { graph } from '../lib/terms';
-import { layout } from '../lib/layout';
+import { canvasHeight, layout } from '../lib/layout';
 import { href, lessonByPath, lessonBySlug, resolveLink } from '../lib/course';
 import { EDGE_TYPES } from '../data.mjs';
 
@@ -37,7 +37,8 @@ else if (term) sub = mode === 'genealogy' ? ancestors(graph, term) : mode === 'u
 else if (lesson) sub = lessonMap(graph, lesson);
 else throw new Error('<MindMap>: pass `term`, `lesson` or mode="all" (or use it on a lesson page)');
 
-const placed = new Map(layout(sub).nodes.map((n) => [n.id, n]));
+const laid = layout(sub);
+const placed = new Map(laid.nodes.map((n) => [n.id, n]));
 const layerLabel = (id: string) => graph.layers[graph.layerIndex.get(id) ?? 0]?.label ?? id;
 
 const nodes: ViewNode[] = sub.terms.map((t) => {
@@ -64,7 +65,7 @@ const legend = EDGE_TYPES.filter((t: EdgeType) => edges.some((e) => e.type === t
 const legendLayers = graph.layers.flatMap((l, index) => (sub.terms.some((t) => t.layer === l.id) ? [{ label: l.label, index }] : []));
 
 const byId = new Map(sub.terms.map((t) => [t.id, t.label]));
-const height = Math.min(620, Math.max(260, Math.max(...nodes.map((n) => n.y + n.h)) + 90));
+const height = canvasHeight(laid);
 ---
 
 <figure class="ck-mindmap not-content">

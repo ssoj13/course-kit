@@ -8,6 +8,7 @@ import { Background, Controls, Handle, Position, ReactFlow, type Edge, type Node
 import '@xyflow/react/dist/style.css';
 import './graph.css';
 import { Frame } from './Frame';
+import { FIT_ZOOM } from '../../lib/fit';
 import { KEYS, watch } from '../../lib/store';
 import { readProgress, type Progress } from '../../lib/progress';
 
@@ -118,7 +119,7 @@ export default function RoadmapView({ nodes, edges, height }: { nodes: RoadNode[
 					edges={rfEdges}
 					nodeTypes={nodeTypes}
 					fitView
-					fitViewOptions={{ padding: 0.05 }}
+					fitViewOptions={{ padding: 0.05, minZoom: FIT_ZOOM.min, maxZoom: FIT_ZOOM.max }}
 					minZoom={0.2}
 					maxZoom={1.5}
 					zoomOnScroll={false}

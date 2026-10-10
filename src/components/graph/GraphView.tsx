@@ -19,6 +19,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import './graph.css';
 import { Frame } from './Frame';
+import { FIT_ZOOM } from '../../lib/fit';
 import type { EdgeType } from '../../lib/graph';
 
 export interface ViewNode {
@@ -130,7 +131,7 @@ export default function GraphView({ nodes, edges, height, legend, layers }: Grap
 					edges={rfEdges}
 					nodeTypes={nodeTypes}
 					fitView
-					fitViewOptions={{ padding: 0.12 }}
+					fitViewOptions={{ padding: 0.12, minZoom: FIT_ZOOM.min, maxZoom: FIT_ZOOM.max }}
 					minZoom={0.3}
 					maxZoom={2}
 					// The page must keep scrolling over the map; zoom with the controls, pinch or ctrl+wheel.
