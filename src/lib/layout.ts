@@ -10,7 +10,13 @@
  * exports nothing and `new ELK()` throws.
  */
 import { graphlib, layout as dagreLayout } from '@dagrejs/dagre';
-import { HIERARCHY, type SubGraph } from './graph';
+import { HIERARCHY, type EdgeType } from './graph';
+
+/** What the layout needs: any node/edge set (term subgraphs, but also course-specific graphs such as object trees). */
+export interface LayoutInput {
+	terms: readonly { id: string; label: string }[];
+	edges: readonly { from: string; to: string; type: EdgeType }[];
+}
 
 export interface Placed {
 	id: string;
@@ -35,7 +41,7 @@ const NODE_H = 40;
  */
 export const nodeWidth = (label: string): number => Math.min(240, Math.max(96, Math.round(label.length * 7.5 + 32)));
 
-export function layout(sub: SubGraph): Layout {
+export function layout(sub: LayoutInput): Layout {
 	const g = new graphlib.Graph();
 	g.setGraph({ rankdir: 'TB', nodesep: 28, ranksep: 56, marginx: 0, marginy: 0 });
 	g.setDefaultEdgeLabel(() => ({}));
