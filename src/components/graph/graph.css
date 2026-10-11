@@ -1,16 +1,9 @@
 /*
- * Graph look, shared by every graph island (mind maps, roadmap, course-specific maps): a node-editor canvas in the
- * spirit of Houdini / Blender networks. Nodes are cards with a colored title bar and visible ports, wires are
- * smooth curves, the selected node's wires light up. Colors are tokens on `.ck-graph`, redefined for the light theme.
+ * Look of the react-flow roadmap (RoadmapView): a node-editor canvas in the spirit of Houdini / Blender networks.
+ * Concept maps (mind maps, course object maps) use the tree look instead (tree.css). Colors are tokens on `.ck-graph`,
+ * redefined for the light theme.
  */
 .ck-graph {
-	/* Depth-layer palette: index 0 = most abstract layer, the last = hardware. */
-	--ck-l0: #6f86ff;
-	--ck-l1: #2fbf9b;
-	--ck-l2: #f0a640;
-	--ck-l3: #ef6461;
-	--ck-l4: #b07cf0;
-	--ck-l5: #8b97ab;
 	--ck-canvas: #12151c;
 	--ck-dots: #2a303c;
 	--ck-node-bg: #1b1f29;
@@ -93,187 +86,10 @@
 	outline-offset: 2px;
 }
 
-/* Node: title bar + caption, ports top and bottom */
-.ck-node {
-	display: flex;
-	flex-direction: column;
-	box-sizing: border-box;
-	border: 1px solid var(--ck-node-line);
-	border-radius: 0.6rem;
-	background: var(--ck-node-bg);
-	color: var(--ck-node-text);
-	box-shadow: var(--ck-shadow);
-	cursor: grab;
-	transition: box-shadow 0.15s, transform 0.15s, opacity 0.15s;
-}
-.ck-node:hover {
-	transform: translateY(-1px);
-}
-.react-flow__node.dragging .ck-node {
-	cursor: grabbing;
-}
-.ck-node-head {
-	display: flex;
-	align-items: center;
-	gap: 0.4rem;
-	height: 26px;
-	padding: 0 0.65rem;
-	border-radius: calc(0.6rem - 1px) calc(0.6rem - 1px) 0 0;
-	background: color-mix(in srgb, var(--ck-c) 22%, var(--ck-node-bg));
-	border-bottom: 1px solid color-mix(in srgb, var(--ck-c) 45%, var(--ck-node-line));
-	font-size: 13px;
-	font-weight: 650;
-	letter-spacing: 0.005em;
-}
-.ck-node-head::before {
-	content: '';
-	flex: none;
-	width: 0.5rem;
-	height: 0.5rem;
-	border-radius: 50%;
-	background: var(--ck-c);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--ck-c) 25%, transparent);
-}
-.ck-node-head span,
-.ck-node-body {
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-}
-.ck-node-head.is-code,
-.ck-graph .is-code {
-	font-family: var(--__sl-font-mono);
-	font-size: 12.5px;
-	letter-spacing: 0;
-}
-.ck-node-body {
-	padding: 0 0.65rem;
-	line-height: 22px;
-	font-size: 11px;
-	color: var(--ck-node-muted);
-}
-.ck-node.is-focus {
-	border-color: color-mix(in srgb, var(--ck-c) 70%, var(--ck-node-line));
-	box-shadow:
-		0 0 0 1px color-mix(in srgb, var(--ck-c) 50%, transparent),
-		var(--ck-shadow);
-}
-.ck-node.is-selected,
-.react-flow__node.selected .ck-node {
-	box-shadow:
-		0 0 0 2px var(--sl-color-accent),
-		var(--ck-shadow);
-}
-/* Ports: small rings like the connectors of a DCC node */
-.ck-node .react-flow__handle {
-	width: 9px;
-	height: 9px;
-	min-width: 0;
-	min-height: 0;
-	border: 2px solid var(--ck-c);
-	background: var(--ck-node-bg);
-}
-.ck-layer-0 { --ck-c: var(--ck-l0); }
-.ck-layer-1 { --ck-c: var(--ck-l1); }
-.ck-layer-2 { --ck-c: var(--ck-l2); }
-.ck-layer-3 { --ck-c: var(--ck-l3); }
-.ck-layer-4 { --ck-c: var(--ck-l4); }
-.ck-layer-5 { --ck-c: var(--ck-l5); }
-
 /* Wires */
 .ck-graph .react-flow__edge-path {
 	stroke-linecap: round;
 	transition: stroke 0.15s, stroke-width 0.15s, opacity 0.15s;
-}
-/* Secondary relations (uses, related) do not shape the layout and would cross it everywhere: barely visible
-   until their node is selected (`is-hot`). */
-.ck-edge.is-muted .react-flow__edge-path {
-	opacity: 0.16;
-}
-.ck-graph .react-flow__edge.is-hot .react-flow__edge-path {
-	stroke: var(--ck-wire-hot);
-	stroke-width: 2.2;
-	opacity: 1;
-}
-
-/* Detail panel under the canvas */
-.ck-graph-info {
-	border-top: 1px solid var(--ck-node-line);
-	padding: 0.7rem 1rem;
-	font-size: var(--sl-text-sm);
-	min-height: 4.5rem;
-	color: var(--sl-color-gray-2);
-}
-.ck-graph-info p {
-	margin: 0 0 0.35rem;
-}
-.ck-graph-title b {
-	color: var(--sl-color-white);
-	font-size: var(--sl-text-base);
-}
-.ck-badge {
-	font-size: var(--sl-text-xs);
-	padding: 0.05rem 0.5rem;
-	border: 1px solid var(--ck-node-line);
-	border-radius: 1rem;
-	color: var(--ck-node-muted);
-}
-.ck-relations {
-	list-style: none;
-	margin: 0 0 0.4rem;
-	padding: 0;
-}
-.ck-relations li {
-	margin: 0.1rem 0;
-}
-.ck-relations li::before {
-	content: '↳ ';
-	color: var(--ck-node-muted);
-}
-.ck-relations em {
-	font-style: normal;
-	color: var(--ck-node-muted);
-}
-.ck-muted {
-	color: var(--sl-color-gray-3);
-}
-
-/* Legend */
-.ck-legend {
-	border-top: 1px solid var(--ck-node-line);
-	padding: 0.55rem 1rem 0.7rem;
-	font-size: var(--sl-text-xs);
-	color: var(--sl-color-gray-2);
-}
-.ck-legend-note {
-	display: block;
-	margin-bottom: 0.35rem;
-	color: var(--sl-color-gray-3);
-}
-.ck-legend ul {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.3rem 1.1rem;
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-.ck-legend li {
-	display: flex;
-	align-items: center;
-	gap: 0.4rem;
-	margin: 0;
-}
-.ck-legend line {
-	stroke: var(--ck-wire);
-	stroke-width: 2;
-}
-.ck-swatch {
-	display: inline-block;
-	width: 0.7rem;
-	height: 0.7rem;
-	border-radius: 50%;
-	background: var(--ck-c);
 }
 
 /* Roadmap (RoadmapView): modules on the spine, lessons on both sides. Same card language, link behaviour. */
@@ -340,12 +156,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.ck-node,
 	.ck-road,
 	.ck-graph .react-flow__edge-path {
 		transition: none;
 	}
-	.ck-node:hover,
 	.ck-road:hover {
 		transform: none;
 	}

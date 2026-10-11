@@ -12,9 +12,9 @@ its own widgets) and two JSON manifests. course-kit turns them into a full site:
 - **Mind maps from one term graph, `terms.json`.** Every term has a one-line definition, and typed relations connect
   the terms (built on, a kind of, part of, uses, related). Lesson maps, genealogy ("down to the roots"), the full
   knowledge map and the glossary are all generated from it.
-- **A node-editor look.** Foundations sit on top and rows read left to right in course order. Nodes are draggable and
-  connected by smooth wires. Layout runs at build time with dagre, and the browser draws the graph with
-  @xyflow/react.
+- **Concept trees.** Every map is a tree: each term hangs off the term it is built on, other relations are dashed
+  wires or notes. The reader picks the view: a roadmap.sh-style spine, a collapsible tree, the full tree or an
+  outline. Details open in a floating window that never moves the map. The roadmap is a react-flow graph.
 - **Code from real files.** `<Snippet>` and `<CodeTabs>` cut `#region` blocks out of the course's example sources,
   so the code in the lessons is the code that compiles.
 - **Several languages.** The first language is served at the base path, the others under `/<code>/`, with

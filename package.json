@@ -1,6 +1,6 @@
 {
   "name": "course-kit",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Engine for interactive Starlight textbooks: course manifest, progress, quizzes, term graph and mind maps.",
   "type": "module",
   "keywords": ["astro-component", "withastro", "starlight"],
@@ -31,7 +31,6 @@
     "react-dom": "^19.3.0"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^3.1.1",
     "@xyflow/react": "^12.12.0"
   },
   "devDependencies": {

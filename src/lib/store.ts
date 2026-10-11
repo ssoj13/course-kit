@@ -107,4 +107,8 @@ export function watch(key: string, fn: () => void, signal?: AbortSignal): () => 
 export const KEYS = {
 	/** Record<lesson slug (course.json), true> */
 	progress: 'progress',
+	/** 'collapse' | 'tree' | 'outline': the reader's choice of concept-tree view, shared by every tree (TreeView). */
+	treeView: 'tree-view',
+	/** { x, y, w, h } in px: where the reader left the details window of the concept trees (TreeView). */
+	treeWindow: 'tree-window',
 } as const;

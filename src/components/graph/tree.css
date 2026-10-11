@@ -1,0 +1,608 @@
+/*
+ * Concept tree look (TreeView.tsx): cards with a group-colored left bar on a quiet frame, elbow connectors, a
+ * roadmap.sh-style spine, an outliner list and a floating details window. Colors come from Starlight's theme variables, so
+ * light and dark follow the site switch; `--ck-c` (per card) is the group color given by the caller.
+ */
+.ck-tree,
+.ck-win {
+	--ck-tree-frame: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	--ck-tree-card: var(--sl-color-black);
+	--ck-tree-line: var(--sl-color-gray-5);
+	--ck-tree-ink: var(--sl-color-white);
+	--ck-tree-muted: var(--sl-color-gray-3);
+	--ck-tree-wire: var(--sl-color-gray-4);
+	--ck-tree-hot: var(--sl-color-accent);
+	/* Depth-layer palette of term maps (index 0 = most abstract layer); dark theme values, light below. */
+	--ck-l0: #8a93ff;
+	--ck-l1: #35c39b;
+	--ck-l2: #e2a94a;
+	--ck-l3: #f0716a;
+	--ck-l4: #c690f0;
+	--ck-l5: #98a1b2;
+}
+:root[data-theme='light'] :is(.ck-tree, .ck-win) {
+	--ck-l0: #4f5bd5;
+	--ck-l1: #0f8a6a;
+	--ck-l2: #b7791f;
+	--ck-l3: #c2413b;
+	--ck-l4: #8a4fc0;
+	--ck-l5: #5d6573;
+}
+
+.ck-tree {
+	container: ck-tree / inline-size;
+	border: 1px solid var(--ck-tree-line);
+	border-radius: 0.75rem;
+	background: var(--ck-tree-frame);
+	color: var(--ck-tree-ink);
+	font-size: 14.5px;
+	min-width: 0;
+}
+
+/* Toolbar: view switch + expand/collapse */
+.ck-tree-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 0.75rem;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.7rem 0.9rem 0;
+}
+.ck-seg {
+	display: inline-flex;
+	flex-wrap: wrap;
+	border: 1px solid var(--ck-tree-line);
+	border-radius: 0.5rem;
+	overflow: hidden;
+}
+.ck-seg button,
+.ck-tree-tools button {
+	border: 0;
+	background: none;
+	color: var(--ck-tree-muted);
+	font: inherit;
+	font-size: 13.5px;
+	font-weight: 500;
+	padding: 0.3rem 0.7rem;
+	cursor: pointer;
+}
+.ck-seg button[aria-pressed='true'] {
+	background: var(--ck-tree-card);
+	color: var(--ck-tree-ink);
+	box-shadow: inset 0 -2px 0 var(--ck-tree-hot);
+}
+.ck-tree-tools {
+	display: flex;
+	gap: 0.4rem;
+}
+.ck-tree-tools button {
+	border: 1px solid var(--ck-tree-line);
+	border-radius: 0.45rem;
+	background: var(--ck-tree-card);
+	color: var(--ck-tree-ink);
+}
+.ck-tree :is(button, a):focus-visible {
+	outline: 2px solid var(--ck-tree-hot);
+	outline-offset: 2px;
+}
+.ck-tree-hint {
+	margin: 0.5rem 0.9rem 0;
+	font-size: 13.5px;
+	color: var(--ck-tree-muted);
+}
+
+/* The map scrolls inside the frame; the page never scrolls sideways. */
+.ck-tree-scroll {
+	overflow-x: auto;
+	padding: 1rem 0.9rem;
+}
+
+/* Card: shared by every view */
+.ck-tc {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.1rem;
+	box-sizing: border-box;
+	max-width: 17rem;
+	margin: 0;
+	padding: 0.4rem 0.7rem;
+	border: 1.5px solid var(--ck-tree-line);
+	border-left: 4px solid var(--ck-c);
+	border-radius: 0.55rem;
+	background: var(--ck-tree-card);
+	color: var(--ck-tree-ink);
+	font: inherit;
+	font-size: 14.5px;
+	font-weight: 500;
+	line-height: 1.3;
+	text-align: left;
+	cursor: pointer;
+	transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.ck-tc:hover {
+	border-color: color-mix(in srgb, var(--ck-c) 60%, var(--ck-tree-line));
+	border-left-color: var(--ck-c);
+}
+.ck-tc.is-selected {
+	border-color: var(--ck-tree-hot);
+	border-left-color: var(--ck-c);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--ck-tree-hot) 30%, transparent);
+}
+.ck-tc-label:not(.is-code) {
+	overflow-wrap: anywhere;
+}
+.ck-tc-label.is-code {
+	font-family: var(--__sl-font-mono);
+	font-size: 13.5px;
+}
+.ck-tc-sub,
+.ck-tc-also {
+	font-size: 13.5px;
+	font-weight: 400;
+	color: var(--ck-tree-muted);
+}
+.ck-tc.is-muted {
+	border-style: dashed;
+	border-left-style: solid;
+	background: var(--ck-tree-frame);
+	color: var(--ck-tree-muted);
+}
+
+/* Toggle: hidden-children count, or "−" when open */
+.ck-tt {
+	flex: none;
+	width: 26px;
+	height: 26px;
+	margin-left: 6px;
+	padding: 0;
+	border: 1.5px solid var(--ck-tree-line);
+	border-radius: 50%;
+	background: var(--ck-tree-frame);
+	color: var(--ck-tree-ink);
+	font: 600 12px var(--__sl-font-mono);
+	cursor: pointer;
+}
+.ck-tt[aria-expanded='true'] {
+	background: var(--ck-tree-card);
+	color: var(--ck-tree-muted);
+}
+.ck-tt-pad {
+	flex: none;
+	width: 26px;
+	margin-left: 6px;
+}
+
+/* Tree views: absolutely placed nodes, wires underneath */
+.ck-tree-canvas {
+	position: relative;
+	transition: height 0.3s ease, width 0.3s ease;
+}
+.ck-tree-canvas.is-measuring {
+	visibility: hidden;
+}
+.ck-tn {
+	position: absolute;
+	left: 0;
+	top: 0;
+	display: flex;
+	align-items: center;
+	transition: transform 0.3s ease, opacity 0.3s ease;
+	will-change: transform;
+}
+.ck-tn.is-gone,
+.ck-tree-rel.is-gone {
+	opacity: 0;
+	pointer-events: none;
+}
+/* Absolute cards would shrink to the canvas width while it is being measured: size them by their content, capped. */
+.ck-tree-canvas .ck-tc {
+	width: max-content;
+}
+.ck-tree-wires {
+	position: absolute;
+	left: 0;
+	top: 0;
+	overflow: visible;
+	pointer-events: none;
+}
+.ck-tree-wires path {
+	fill: none;
+	stroke: var(--ck-tree-wire);
+	stroke-width: 1.5;
+	transition: d 0.3s ease;
+}
+.ck-tree-wires path.is-extra {
+	stroke-dasharray: 3 4;
+	opacity: 0.35;
+}
+/* A second relation of the selected card stands out. */
+.ck-tree-wires path.is-extra.is-hot {
+	stroke: var(--ck-tree-hot);
+	stroke-width: 2;
+	opacity: 1;
+}
+.ck-tree-rel {
+	position: absolute;
+	left: 0;
+	top: 0;
+	font-size: 12px;
+	line-height: 14px;
+	white-space: nowrap;
+	color: var(--ck-tree-muted);
+	transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Outline */
+.ck-outline ul {
+	list-style: none;
+	margin: 0;
+	padding: 0 0 0 1.4rem;
+	border-left: 1px solid var(--ck-tree-line);
+}
+.ck-outline > ul {
+	padding-left: 0;
+	border-left: 0;
+}
+.ck-outline li {
+	margin: 0.3rem 0 0;
+}
+.ck-orow {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+.ck-orow .ck-tt {
+	order: -1;
+	margin-left: 0;
+}
+.ck-orow .ck-tt-pad {
+	order: -1;
+	margin-left: 0;
+}
+.ck-tc.is-row {
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 0.6rem;
+	max-width: 100%;
+	padding: 0.25rem 0.6rem;
+	border-left-width: 1.5px;
+	border-left-color: var(--ck-tree-line);
+}
+.ck-tc.is-row::before {
+	content: '';
+	flex: none;
+	align-self: center;
+	width: 0.65rem;
+	height: 0.65rem;
+	border-radius: 2px;
+	background: var(--ck-c);
+}
+
+/* Spine (roadmap.sh): one vertical line; each row = left block, node on the line, right block. */
+.ck-sp-map {
+	--ck-sp-w: 13rem;
+	position: relative;
+	display: grid;
+	gap: 0.5rem;
+	max-width: 62rem;
+	margin: 0 auto;
+}
+.ck-sp-map::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 50%;
+	border-left: 2px solid color-mix(in srgb, var(--ck-tree-hot) 70%, var(--ck-tree-line));
+	transform: translateX(-1px);
+}
+.ck-sp-section {
+	display: grid;
+	gap: 0.6rem;
+}
+.ck-sp-cap {
+	position: relative;
+	margin: 0.9rem 0 0.1rem;
+	text-align: center;
+	font-size: 13.5px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ck-c);
+}
+.ck-sp-cap span {
+	padding: 0.1rem 0.6rem;
+	background: var(--ck-tree-frame);
+}
+.ck-sp-row {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) var(--ck-sp-w) minmax(0, 1fr);
+	align-items: center;
+}
+.ck-sp-node {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	justify-content: center;
+}
+.ck-tc.is-head {
+	width: 100%;
+	max-width: none;
+	align-items: center;
+	text-align: center;
+	background: color-mix(in srgb, var(--ck-c) 22%, var(--ck-tree-card));
+	border: 2px solid var(--ck-c);
+	font-weight: 600;
+}
+.ck-tc.is-head .ck-tc-also {
+	font-weight: 400;
+}
+.ck-sp-side {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+.ck-sp-side.is-left {
+	justify-content: flex-end;
+}
+/* Dotted bridge from the spine node to its block */
+.ck-sp-row.has-left .ck-sp-side.is-left::after,
+.ck-sp-row.has-right .ck-sp-side.is-right::before {
+	content: '';
+	flex: none;
+	width: 1.4rem;
+	border-top: 2px dotted var(--ck-tree-wire);
+}
+.ck-sp-side.is-left::after {
+	order: 2;
+}
+.ck-sp-block {
+	list-style: none;
+	display: grid;
+	gap: 0.35rem;
+	min-width: 0;
+	margin: 0;
+	padding: 0.15rem 0;
+}
+.ck-sp-block.is-right {
+	border-left: 2px dotted var(--ck-tree-wire);
+	padding-left: 0.9rem;
+	justify-items: start;
+}
+.ck-sp-block.is-left {
+	border-right: 2px dotted var(--ck-tree-wire);
+	padding-right: 0.9rem;
+	justify-items: end;
+}
+.ck-sp-block li {
+	position: relative;
+	margin: 0;
+	max-width: 100%;
+}
+.ck-sp-block.is-right li {
+	padding-left: calc(var(--ck-d) * 1.1rem);
+}
+.ck-sp-block.is-left li {
+	padding-right: calc(var(--ck-d) * 1.1rem);
+}
+.ck-tc.is-side {
+	max-width: 100%;
+}
+/* Narrow frames: the line moves to the left edge, both sides stack under their node. */
+@container ck-tree (max-width: 40rem) {
+	.ck-sp-map::before {
+		left: 0.6rem;
+	}
+	.ck-sp-cap {
+		text-align: left;
+		padding-left: 1.4rem;
+	}
+	.ck-sp-cap span {
+		padding: 0;
+	}
+	.ck-sp-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.35rem;
+		padding-left: 1.4rem;
+	}
+	.ck-sp-node {
+		order: 0;
+		justify-content: flex-start;
+	}
+	.ck-tc.is-head {
+		width: auto;
+		max-width: 100%;
+		align-items: flex-start;
+		text-align: left;
+	}
+	.ck-sp-side {
+		order: 1;
+		padding-left: 1rem;
+	}
+	.ck-sp-side.is-left {
+		justify-content: flex-start;
+	}
+	.ck-sp-row .ck-sp-side::before,
+	.ck-sp-row .ck-sp-side::after {
+		display: none;
+	}
+	.ck-sp-row:not(.has-left) .ck-sp-side.is-left,
+	.ck-sp-row:not(.has-right) .ck-sp-side.is-right {
+		display: none;
+	}
+	.ck-sp-block.is-left {
+		border-right: 0;
+		border-left: 2px dotted var(--ck-tree-wire);
+		padding-right: 0;
+		padding-left: 0.9rem;
+		justify-items: start;
+	}
+	.ck-sp-block.is-left li {
+		padding-right: 0;
+		padding-left: calc(var(--ck-d) * 1.1rem);
+	}
+}
+
+/* Legend */
+.ck-tree-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem 1rem;
+	align-items: center;
+	padding: 0.6rem 0.9rem 0.8rem;
+	border-top: 1px solid var(--ck-tree-line);
+	font-size: 13.5px;
+	color: var(--ck-tree-muted);
+}
+.ck-tree-legend ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem 1rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.ck-tree-legend li {
+	margin: 0;
+}
+.ck-tree-legend li::before {
+	content: '';
+	display: inline-block;
+	width: 0.7rem;
+	height: 0.7rem;
+	margin-right: 0.4rem;
+	border-radius: 2px;
+	background: var(--ck-c);
+	vertical-align: -0.05rem;
+}
+
+/* Details window: floating, draggable by the title bar, resizable from the corner; a bottom sheet on phones. */
+.ck-win {
+	position: fixed;
+	z-index: 1000;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	min-width: 300px;
+	min-height: 200px;
+	overflow: hidden;
+	resize: both;
+	border: 1px solid var(--ck-tree-line);
+	border-radius: 0.75rem;
+	background: var(--sl-color-bg, var(--ck-tree-card));
+	color: var(--ck-tree-ink);
+	box-shadow: 0 18px 48px -12px rgb(0 0 0 / 0.55);
+	font-size: 15px;
+	line-height: 1.55;
+	animation: ck-pop 0.16s ease;
+}
+.ck-win:focus {
+	outline: none;
+}
+.ck-win:focus-visible {
+	outline: 2px solid var(--ck-tree-hot);
+}
+.ck-win.is-sheet {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	max-height: 75vh;
+	min-width: 0;
+	resize: none;
+	border-radius: 0.9rem 0.9rem 0 0;
+	animation-name: ck-rise;
+}
+.ck-win-bar {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.55rem 0.6rem 0.55rem 0.9rem;
+	background: color-mix(in srgb, var(--ck-c) 20%, var(--ck-tree-frame));
+	border-bottom: 2px solid var(--ck-c);
+	cursor: move;
+	touch-action: none;
+	user-select: none;
+}
+.ck-win.is-sheet .ck-win-bar {
+	cursor: default;
+}
+.ck-win-bar h3 {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	font-size: 1.1rem;
+	line-height: 1.3;
+	overflow-wrap: anywhere;
+}
+.ck-win-bar .is-code {
+	font-family: var(--__sl-font-mono);
+	font-size: 1rem;
+}
+.ck-win-badge {
+	flex: none;
+	font-size: 13.5px;
+	padding: 0.05rem 0.6rem;
+	border-radius: 1rem;
+	border: 1px solid var(--ck-c);
+}
+.ck-win-x {
+	flex: none;
+	width: 2rem;
+	height: 2rem;
+	border: 1px solid var(--ck-tree-line);
+	border-radius: 0.45rem;
+	background: var(--ck-tree-card);
+	color: var(--ck-tree-ink);
+	font-size: 15px;
+	cursor: pointer;
+}
+.ck-win-body {
+	flex: 1;
+	overflow: auto;
+	padding: 0.9rem 1.1rem 1.1rem;
+}
+.ck-win :is(button, a, input):focus-visible {
+	outline: 2px solid var(--ck-tree-hot);
+	outline-offset: 2px;
+}
+.ck-win-body p {
+	margin: 0 0 0.7rem;
+}
+.ck-win-facts {
+	margin: 0 0 0.9rem;
+	padding-left: 1.1rem;
+}
+.ck-win-facts li {
+	margin: 0.2rem 0;
+}
+.ck-win-link {
+	color: var(--sl-color-text-accent, var(--ck-tree-hot));
+}
+@keyframes ck-pop {
+	from {
+		opacity: 0;
+		transform: scale(0.98);
+	}
+}
+@keyframes ck-rise {
+	from {
+		transform: translateY(100%);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.ck-tn,
+	.ck-tree-rel,
+	.ck-tree-canvas,
+	.ck-tree-wires path,
+	.ck-tc {
+		transition: none;
+	}
+	.ck-win {
+		animation: none;
+	}
+}

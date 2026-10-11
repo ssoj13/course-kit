@@ -97,6 +97,9 @@ export function everything(g: TermGraph): SubGraph {
 	return { terms: [...g.terms], edges: [...g.edges] };
 }
 
+/** API identifiers (VkDevice, VK_EXT_..., vkCreate...) are shown in monospace by every map. */
+export const isCode = (label: string) => /^(Vk[A-Z]|VK_|vk[A-Z])/.test(label);
+
 /** Terms sorted for the glossary: by label in the alphabet of `lang`, case-insensitive. */
 export function sortedTerms(g: TermGraph, lang: string): TermJson[] {
 	return [...g.terms].sort((a, b) => a.label.localeCompare(b.label, lang, { sensitivity: 'base' }));

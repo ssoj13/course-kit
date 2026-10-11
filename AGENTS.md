@@ -31,12 +31,14 @@ Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossar
   injects pages (`/[module]`, `/roadmap`, `/glossary`, `/404`), checks every lesson has a page.
 - `src/data.mjs` — manifest types (JSDoc) and validation; `src/links.mjs` — course link resolver + Markdown plugin.
 - `src/lib/` (TS, Vite side): `course.ts` (numbering/URLs), `graph.ts` (pure term-graph queries), `terms.ts`
-  (binds graph.ts to the course), `layout.ts` (dagre, build time), `store.ts`, `progress.ts`, `element.ts`
+  (binds graph.ts to the course), `tree.ts` (pure concept-tree model: forest, primary parents, tidy layout, spine,
+  details-window placement), `store.ts`, `progress.ts`, `element.ts`
   (custom-element base), `ui.ts`, `quiz.ts`, `route-links.ts` (Starlight middleware), `regions.ts` (pure region
   extraction), `snippets.ts` (build-time file reads via `virtual:course-kit/server`, which holds the project root and
   is kept separate from `virtual:course-kit/data` so local paths never reach a browser bundle).
-- `src/components/` — Astro components; `graph/GraphView.tsx` and `graph/RoadmapView.tsx` are React islands
-  (@xyflow/react) rendered with `client:only="react"` plus a text fallback.
+- `src/components/` — Astro components. React islands (`client:only="react"` plus a text fallback):
+  `graph/TreeView.tsx` (concept trees: MindMap and course maps such as vulkan_en's ObjectGraph; see "Concept trees"),
+  `graph/RoadmapView.tsx` (@xyflow/react, the roadmap page only; `graph.css`, `Frame.tsx`, `flow.ts`, `lib/fit.ts`).
 - `src/components/lab/` — lab primitives (React): `useTimeline.ts`, `Scrubber.tsx`, `LabFrame.tsx`, `lab.css`.
   `src/components/fullscreen.ts` — `useFullScreen()`, the one full-screen toggle of graph/Frame.tsx and LabFrame.
 - `src/pages/` — generated pages. `src/styles/lab.css` — widget design tokens/primitives.
@@ -58,8 +60,9 @@ Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossar
   `file:..` from inside the repo makes Bun copy the repo into itself recursively (depth 50+; delete with
   `robocopy <empty> <dir> /MIR`). `astro preview --root fixture` fails (Starlight route resolution); serve `dist`
   statically instead.
-- Layout uses @dagrejs/dagre, not elkjs: elkjs tests `typeof self` to detect a Web Worker, Bun defines `self`,
-  so under Bun elkjs exports nothing.
+- No graph-layout library: concept maps are trees laid out by lib/tree.ts (dagre was removed in v0.5.0 with the
+  react-flow mind maps). If a layered layout is ever needed again: elkjs exports nothing under Bun (it tests
+  `typeof self`); dagre worked.
 - TypeScript is pinned to 6.0.x: @astrojs/check 0.9.10 peers on TS ^5 || ^6.
 - Hierarchy edge types (`built-on`, `is-a`, `part-of`) must be acyclic as a UNION (genealogy walks them together).
 - Storage keys are prefixed with course.json `id` (all courses share the `<user>.github.io` origin).
@@ -78,6 +81,33 @@ Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossar
 - Generated pages are injected once per language with the same entrypoint; one 404 (default language + links).
 - Progress keys are lesson slugs: shared by all languages.
 
+## Concept trees (v0.5.0)
+
+User-approved design (2026-10-11, gallery "D+E" + roadmap.sh): every concept map is a TREE. `TreeView` props:
+`items` ({id, label, def, group, parent, rel, relUp, extra[{id, rel, note}], code, sub, muted, facts, href,
+hrefLabel}), `groups` ({id, label, color = any CSS color, usually a theme-aware custom property}; order = sort,
+spine and legend order), `label`, `reveal` (ids visible at start, or 'all'), `hint`, `prefer` (view before the
+reader picks one), `cardClass` / `renderDetails` (function props: only from another island, e.g. ObjectGraphView),
+`children` (rendered inside the frame under the legend).
+- Views, chosen by the reader and remembered for the whole site (store key `tree-view`): `spine` (DEFAULT_MODE,
+  roadmap.sh: a spine node at every group change, same-group descendants beside it, left/right balanced, one column
+  under 40rem via a container query), `collapse` (tidy tree left to right, round toggle = hidden-children count,
+  "−" when open), `tree` (all open, no toggles), `outline` (indented list, shares the open set with collapse).
+- One primary parent per node (solid elbow connector, trunks aligned on column edges, relation label measured and
+  given room in the column gap). Other parents: dashed bezier wire under the cards when both ends are visible,
+  else a "+ from X" / "+ <rel> X" line on the card. A card that is the second parent of more than FAN = 2 visible
+  cards (hubs such as "Vulkan object") is wired only while one end is selected; the cards carry the "+" note.
+- Details: `DetailsWindow.tsx`, a floating non-modal window in a portal (fixed elements inside the page could be
+  trapped by containment): opens at the right side avoiding the node, draggable by the title bar, CSS-resizable,
+  geometry remembered (store key `tree-window`), Escape/X close and focus returns to the card, bottom sheet under
+  640 px. Clicking another card swaps the content. Placement math: `placeWindow`/`clampRect` (tested).
+- Measuring: cards are measured after every render (offset reads; state bump only on change) plus a ResizeObserver
+  (fonts). Tree cards are `width: max-content` capped by `max-width` (absolute boxes would shrink to the canvas).
+  API names break only between words (`<wbr>`).
+- MindMap: lesson mode adds a "Lesson N: title" root; primary parent = strongest relation (built-on > part-of >
+  is-a > uses > related) via `pickParents` (cycle-safe: uses/related are not acyclic); terms of other lessons are
+  muted with "lesson N" and their lesson link; groups = layers (`--ck-l0..5` in tree.css, light + dark);
+  `mode="all"` (roadmap page) is a forest that prefers the collapse view.
 ## Quiz model
 
 `{ q, options: [{ text, why }] x4, answer, ref }`: grading on click, shared `flash()` (lab.css: 1 s in, 5 s out),
@@ -108,8 +138,8 @@ find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
 
 - [x] defineCourse, manifests + validation, links, generated pages, progress, quiz, term graph, MindMap, Roadmap
 - [x] unit tests (manifests, links, graph queries), fixture build, astro-check clean
-- [ ] Non-hierarchy edges (`related`, `uses`) can pass straight under a node in a vertical chain; route them
-      around (side handles or bezier offset)
+- [x] Non-hierarchy edges crossing the map: obsolete since v0.5.0 (concept trees; second relations are dashed wires
+      under the cards or "+" notes, hubs wired only on selection)
 - [ ] Roadmap: verify sizing with a real many-module course (vulkan_en)
 - [x] CI: test + fixture build + check on push (green on ubuntu, real Node: the .mjs config side works)
 - [x] Graph readability: `lib/fit.ts` (FIT_ZOOM 0.75-1.2, alignTop: start at the root), `canvasHeight()` in
@@ -127,4 +157,8 @@ find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
       timeline primitives (useTimeline, Scrubber, LabFrame)
 - [ ] Labs: verify Scrubber/LabFrame interaction in a real browser (keyboard, play to the end, full screen); only the
       SSR output was checked so far
+- [x] Concept trees (v0.5.0): TreeView (spine / collapse / tree / outline), DetailsWindow, lib/tree.ts + tests;
+      MindMap on the tree; GraphView, lib/layout.ts and dagre removed; the roadmap stays react-flow
+- [ ] Concept trees: a reader-facing check of keyboard use in a real (non-headless) browser and of the window resize
+      handle on touch devices (headless Chrome verified click, Create, swap, Escape, focus return in all four views)
 - [ ] Migration of vllm_en (progress keys were `vllm-course:` prefixed; its widgets) and math_en

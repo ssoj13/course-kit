@@ -1,7 +1,6 @@
 /**
- * Zoom range for fitting a graph into its canvas, shared by the build-time height estimate (layout.ts) and every
- * graph island: below `min` node labels get unreadable (the rest of a wide graph is reached by panning or full
- * screen), above `max` small maps look bloated. A separate module so islands do not pull the layout code (dagre).
+ * Zoom range for fitting a react-flow graph (the roadmap) into its canvas: below `min` node labels get unreadable
+ * (the rest of a wide graph is reached by panning or full screen), above `max` small maps look bloated.
  */
 import type { Edge, Node, ReactFlowInstance } from '@xyflow/react';
 

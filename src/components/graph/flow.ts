@@ -3,7 +3,7 @@
  * dragged them when the node data changes (selection, progress, simulator state), and go back on reset.
  */
 import { useCallback, useEffect } from 'react';
-import { useNodesState, type Edge, type Node } from '@xyflow/react';
+import { useNodesState, type Node } from '@xyflow/react';
 
 /**
  * `initial` must be memoized by the caller: a new array means new data (positions of dragged nodes are kept);
@@ -21,10 +21,3 @@ export function useFlowNodes<N extends Node>(initial: N[]) {
 	return { nodes, onNodesChange, reset };
 }
 
-/** Adds `is-hot` to the edges that touch the selected node, so its wires stand out. */
-export function heat(edges: Edge[], selected: string | null): Edge[] {
-	if (!selected) return edges;
-	return edges.map((e) =>
-		e.source === selected || e.target === selected ? { ...e, className: `${e.className ?? ''} is-hot`, zIndex: 1 } : e,
-	);
-}
