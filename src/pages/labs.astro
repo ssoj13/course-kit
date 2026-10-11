@@ -2,28 +2,31 @@
 /**
  * Lab catalog (`/labs/`, `/<lang>/labs/`), injected only for a course with labs: every lab of course.json `labs` in
  * the page's language, grouped by the module of its lesson in course order; labs that belong to no lesson (previews of
- * later material) form the last group. Within a group labs keep catalog order.
+ * later material) form the last group. Within a group labs keep catalog order. Group headings carry stable ids (the
+ * module slug, `ahead` for the previews), the same in every language, and feed the "On this page" list.
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { courseIn, langOf, type Lab } from '../lib/course';
 
 const v = courseIn(langOf(Astro.url.pathname));
-const groups: { title: string; href?: string; labs: Lab[] }[] = [
+const groups: { id: string; title: string; href?: string; labs: Lab[] }[] = [
 	...v.modules.map((m) => ({
+		id: m.slug,
 		title: v.tf('moduleTitle', { n: m.num, title: m.title }) + (m.optional ? ` ${v.t.optional}` : ''),
 		href: v.moduleHref(m.slug),
 		labs: v.labs.filter((l) => l.lesson?.moduleSlug === m.slug),
 	})),
-	{ title: v.t.labsAhead, labs: v.labs.filter((l) => !l.lesson) },
+	{ id: 'ahead', title: v.t.labsAhead, labs: v.labs.filter((l) => !l.lesson) },
 ].filter((g) => g.labs.length > 0);
+const headings = groups.map((g) => ({ depth: 2, slug: g.id, text: g.title }));
 ---
 
-<StarlightPage frontmatter={{ title: v.t.labs, description: v.tf('labsDescription', { course: v.title }), editUrl: false }}>
+<StarlightPage frontmatter={{ title: v.t.labs, description: v.tf('labsDescription', { course: v.title }), editUrl: false }} headings={headings}>
 	<p>{v.t.labsIntro}</p>
 	{
 		groups.map((g) => (
 			<>
-				<h2>{g.href ? <a href={g.href}>{g.title}</a> : g.title}</h2>
+				<h2 id={g.id}>{g.href ? <a href={g.href}>{g.title}</a> : g.title}</h2>
 				<ul class="ck-labs not-content">
 					{g.labs.map((l) => (
 						<li class="ck-lab-card">
