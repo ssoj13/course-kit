@@ -36,7 +36,8 @@ const own = (p) => fileURLToPath(new URL(p, import.meta.url));
  * @property {string} repo    GitHub repo URL (social link, "edit page" links)
  * @property {Record<string, string>} [pages] extra `page:<name>` targets: name -> docs path below the base
  * @property {any[]} [reference] extra sidebar items appended to the "Reference" group (after Glossary)
- * @property {string[]} [customCss] course stylesheets, loaded after the engine's
+ * @property {string[]} [customCss] course stylesheets, loaded after the engine's (a site theme overrides the
+ *   `--ck-*` tokens of styles/theme.css here)
  * @property {Record<string, string>} [components] extra Starlight component overrides (engine overrides win on conflict)
  * @property {import('astro').AstroUserConfig['vite']} [vite] extra Vite config, merged by Astro
  * @property {{ code: string, label: string }[]} [languages] languages of the course, the first one is the default
@@ -153,7 +154,8 @@ export function defineCourse(o) {
 				}),
 				social: [{ icon: 'github', label: 'GitHub', href: o.repo }],
 				editLink: { baseUrl: `${o.repo.replace(/\/$/, '')}/edit/main/` },
-				customCss: [own('./styles/lab.css'), ...(o.customCss ?? [])],
+				// theme.css first: every engine color token; a course theme in its customCss overrides it.
+				customCss: [own('./styles/theme.css'), own('./styles/lab.css'), ...(o.customCss ?? [])],
 				disable404Route: true, // replaced by the engine's 404 page
 				components: {
 					...o.components,

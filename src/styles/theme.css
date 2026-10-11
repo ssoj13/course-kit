@@ -1,0 +1,86 @@
+/*
+ * course-kit color tokens: the ONE place where the engine's widgets (concept trees, details window, trainers, roadmap,
+ * lab primitives) get their colors. Component CSS and TSX only read these variables; nothing else hardcodes a color.
+ * Loaded globally before lab.css and the course's own `customCss` (index.mjs), so the details window, which lives in
+ * a portal outside the widget, sees them too.
+ *
+ * A site theme overrides this block in its own customCss. Surfaces and ink are derived from Starlight's variables, so
+ * they follow the light/dark switch by themselves; the group palette has explicit light values, so a theme that
+ * changes it overrides BOTH `:root` and `:root[data-theme='light']` (same selectors, loaded later = wins).
+ *
+ * Tokens (see AGENTS.md "Theming"):
+ *   surfaces   --ck-frame (map frame), --ck-card (cards, console), --ck-window (details window), --ck-line (borders)
+ *   ink        --ck-ink (body text), --ck-ink-2 (secondary text), --ck-ink-muted (captions, hints), --ck-link
+ *   graphics   --ck-wire (connectors), --ck-accent (focus, selection, spine), --ck-shadow, --ck-shadow-sm,
+ *              --ck-primary / --ck-on-primary (filled button and its text)
+ *   feedback   --ck-ok, --ck-warn, --ck-err (console lines, state texts, flashes)
+ *   card state --ck-selected, --ck-muted-bg, --ck-muted-ink, --ck-locked-bg, --ck-locked-ink, --ck-error,
+ *              --ck-head-tint / --ck-done-tint (share of the group color mixed into a spine node / a done card)
+ *   groups     --ck-group-1 .. --ck-group-12: an ordered palette; courses map their groups onto it by index
+ *              (MindMap: term layer i -> group i+1)
+ */
+:root {
+	--ck-frame: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	--ck-card: var(--sl-color-black);
+	--ck-window: var(--sl-color-bg);
+	--ck-line: var(--sl-color-gray-5);
+	--ck-ink: var(--sl-color-white);
+	--ck-ink-2: var(--sl-color-gray-2);
+	/* Half way to gray-2: plain gray-3 is 4.49:1 on the dark frame and ~3.5:1 on tinted cards (below WCAG AA). */
+	--ck-ink-muted: color-mix(in srgb, var(--sl-color-gray-2) 50%, var(--sl-color-gray-3));
+	--ck-link: var(--sl-color-text-accent);
+	--ck-wire: var(--sl-color-gray-4);
+	--ck-accent: var(--sl-color-accent);
+	/* Filled buttons: dark text on the light accent in the dark theme (the mid accent gives 3.9:1), see the light block. */
+	--ck-primary: var(--sl-color-accent-high);
+	--ck-on-primary: var(--sl-color-black);
+	--ck-shadow: 0 18px 48px -12px rgb(0 0 0 / 0.55);
+	--ck-shadow-sm: 0 10px 24px -14px rgb(0 0 0 / 0.9);
+	--ck-ok: var(--sl-color-green);
+	--ck-warn: var(--sl-color-orange);
+	--ck-err: var(--sl-color-red);
+
+	--ck-selected: var(--ck-accent);
+	--ck-muted-bg: var(--ck-frame);
+	--ck-muted-ink: var(--ck-ink-muted);
+	--ck-locked-bg: var(--sl-color-gray-6);
+	--ck-locked-ink: var(--ck-ink-muted);
+	--ck-error: var(--ck-err);
+	--ck-head-tint: 22%;
+	--ck-done-tint: 26%;
+
+	/* Dark theme (Starlight's default): light, saturated hues that read on near-black cards. */
+	--ck-group-1: #8a93ff;
+	--ck-group-2: #35c39b;
+	--ck-group-3: #e2a94a;
+	--ck-group-4: #f0716a;
+	--ck-group-5: #c690f0;
+	--ck-group-6: #98a1b2;
+	--ck-group-7: #f06aa6;
+	--ck-group-8: #5cb8f0;
+	--ck-group-9: #bccb45;
+	--ck-group-10: #5fd3d8;
+	--ck-group-11: #f39a5b;
+	--ck-group-12: #8fd16a;
+}
+:root[data-theme='light'] {
+	--ck-shadow-sm: 0 8px 18px -12px rgb(20 30 50 / 0.35);
+	--ck-primary: var(--sl-color-accent);
+	/* Starlight's plain light-theme green/orange/red are pastel (1.8:1 on white); the -high shades read as text. */
+	--ck-ok: var(--sl-color-green-high);
+	--ck-warn: var(--sl-color-orange-high);
+	--ck-err: var(--sl-color-red-high);
+	/* Light theme: the same hues, dark enough to be text on the frame (>= 4.5:1, spine captions) and a light tint. */
+	--ck-group-1: #4f5bd5;
+	--ck-group-2: #0b7a5d;
+	--ck-group-3: #94600f;
+	--ck-group-4: #c2413b;
+	--ck-group-5: #8a4fc0;
+	--ck-group-6: #5d6573;
+	--ck-group-7: #b33a70;
+	--ck-group-8: #1a6fa8;
+	--ck-group-9: #5f6d0b;
+	--ck-group-10: #1d7377;
+	--ck-group-11: #a54f15;
+	--ck-group-12: #376f18;
+}

@@ -1,0 +1,60 @@
+---
+/**
+ * Proof of the theming contract (styles/theme.css): a page that contains this marker gets a high-contrast site theme
+ * by overriding ONLY `--ck-*` tokens, the way a course's customCss would for the whole site. `:has()` keeps the
+ * override on this page although Astro bundles the stylesheet globally.
+ */
+---
+
+<span class="fx-high-contrast" hidden></span>
+
+<style is:global>
+	:root:has(.fx-high-contrast) {
+		--ck-frame: #000;
+		--ck-card: #000;
+		--ck-window: #000;
+		--ck-line: #fff;
+		--ck-ink: #fff;
+		--ck-ink-2: #fff;
+		--ck-ink-muted: #e0e0e0;
+		--ck-link: #ffd400;
+		--ck-wire: #fff;
+		--ck-accent: #ffd400;
+		--ck-ok: #3dff8b;
+		--ck-warn: #ffb000;
+		--ck-err: #ff6b6b;
+		--ck-locked-bg: #1a1a1a;
+		--ck-locked-ink: #d0d0d0;
+		--ck-head-tint: 35%;
+		--ck-done-tint: 35%;
+		--ck-group-1: #6ea8ff;
+		--ck-group-2: #00ff9c;
+		--ck-group-3: #ffd400;
+		--ck-group-4: #ff5f5f;
+		--ck-group-5: #e08cff;
+		--ck-group-6: #ffffff;
+	}
+	:root[data-theme='light']:has(.fx-high-contrast) {
+		--ck-frame: #fff;
+		--ck-card: #fff;
+		--ck-window: #fff;
+		--ck-line: #000;
+		--ck-ink: #000;
+		--ck-ink-2: #000;
+		--ck-ink-muted: #262626;
+		--ck-link: #0033cc;
+		--ck-wire: #000;
+		--ck-accent: #0033cc;
+		--ck-ok: #006b2e;
+		--ck-warn: #8a4b00;
+		--ck-err: #b00020;
+		--ck-locked-bg: #ececec;
+		--ck-locked-ink: #262626;
+		--ck-group-1: #0033cc;
+		--ck-group-2: #006b2e;
+		--ck-group-3: #8a5a00;
+		--ck-group-4: #b00020;
+		--ck-group-5: #6a1fa0;
+		--ck-group-6: #000000;
+	}
+</style>

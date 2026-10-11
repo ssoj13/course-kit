@@ -112,3 +112,6 @@ export const KEYS = {
 	/** { x, y, w, h } in px: where the reader left the details window of the concept trees (TreeView). */
 	treeWindow: 'tree-window',
 } as const;
+
+/** Storage key of a trainer's run (lib/trainer.ts `encode`): one per page and exercise, so lessons never share one. */
+export const trainerKey = (page: string, exercise: string) => `trainer:${page}:${exercise}`;

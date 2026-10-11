@@ -47,9 +47,15 @@ export interface TreeItem {
 export interface TreeGroup {
 	id: string;
 	label: string;
-	/** Any CSS color, usually a custom property that already follows the light/dark theme. */
+	/** CSS color, normally a palette token (`groupColor(i)`), so light/dark and site themes recolor it. */
 	color: string;
 }
+
+/** Size of the group palette of styles/theme.css (`--ck-group-1` .. `--ck-group-12`). */
+export const GROUP_COLORS = 12;
+
+/** Color of palette entry `i` (0-based, wraps): what a course passes as `TreeGroup.color` for its i-th group. */
+export const groupColor = (i: number) => `var(--ck-group-${(i % GROUP_COLORS) + 1})`;
 
 export type TreeMode = 'spine' | 'collapse' | 'tree' | 'outline';
 const MODES: readonly TreeMode[] = ['spine', 'collapse', 'tree', 'outline'];
@@ -187,7 +193,7 @@ export default function TreeView({ lang, items, groups, label, reveal, hint, pre
 	};
 	const labelSize = (id: string): Size => sizes.current.get(`l:${id}`) ?? { w: 0, h: 14 };
 
-	const color = (it: TreeItem) => ({ '--ck-c': groupOf.get(it.group)?.color ?? 'var(--ck-tree-muted)' }) as CSSProperties;
+	const color = (it: TreeItem) => ({ '--ck-c': groupOf.get(it.group)?.color ?? 'var(--ck-ink-muted)' }) as CSSProperties;
 	const name = (x: { id: string; note?: string }) => byId.get(x.id)!.label + (x.note ? ` ${x.note}` : '');
 	/** "+ from A, B; + uses C": the parents the picture does not show as a line. */
 	const alsoText = (xs: { id: string; rel?: string; note?: string }[]) => {
@@ -413,7 +419,7 @@ export default function TreeView({ lang, items, groups, label, reveal, hint, pre
 					id={dlgId}
 					title={<span className={cur.code ? 'is-code' : undefined}>{cur.label}</span>}
 					badge={groupOf.get(cur.group)?.label}
-					color={groupOf.get(cur.group)?.color ?? 'var(--ck-tree-muted)'}
+					color={groupOf.get(cur.group)?.color ?? 'var(--ck-ink-muted)'}
 					closeLabel={t.treeClose}
 					anchor={cards.current.get(cur.id) ?? null}
 					onClose={close}

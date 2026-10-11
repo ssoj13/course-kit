@@ -15,6 +15,8 @@
   ],
   "labs": [
     { "slug": "counter", "title": "Counter", "summary": "Step a counter from zero to five and back.", "lesson": "one" },
-    { "slug": "preview", "title": "Preview", "summary": "A lab that belongs to no lesson yet." }
+    { "slug": "preview", "title": "Preview", "summary": "A lab that belongs to no lesson yet." },
+    { "slug": "trainer", "title": "House trainer", "summary": "Build a house in an order the rules accept: the engine trainer.", "lesson": "one" },
+    { "slug": "theme", "title": "High-contrast theme", "summary": "The house trainer under a site theme that overrides only the color tokens." }
   ]
 }

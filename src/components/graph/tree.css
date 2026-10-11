@@ -1,40 +1,16 @@
 /*
  * Concept tree look (TreeView.tsx): cards with a group-colored left bar on a quiet frame, elbow connectors, a
- * roadmap.sh-style spine, an outliner list and a floating details window. Colors come from Starlight's theme variables, so
- * light and dark follow the site switch; `--ck-c` (per card) is the group color given by the caller.
+ * roadmap.sh-style spine, an outliner list and a floating details window. Every color is a `--ck-*` token of
+ * styles/theme.css (never a literal here), so light/dark and site themes recolor it; `--ck-c` (per card) is the group
+ * color given by the caller, usually a `--ck-group-N` token.
  */
-.ck-tree,
-.ck-win {
-	--ck-tree-frame: var(--sl-color-gray-7, var(--sl-color-gray-6));
-	--ck-tree-card: var(--sl-color-black);
-	--ck-tree-line: var(--sl-color-gray-5);
-	--ck-tree-ink: var(--sl-color-white);
-	--ck-tree-muted: var(--sl-color-gray-3);
-	--ck-tree-wire: var(--sl-color-gray-4);
-	--ck-tree-hot: var(--sl-color-accent);
-	/* Depth-layer palette of term maps (index 0 = most abstract layer); dark theme values, light below. */
-	--ck-l0: #8a93ff;
-	--ck-l1: #35c39b;
-	--ck-l2: #e2a94a;
-	--ck-l3: #f0716a;
-	--ck-l4: #c690f0;
-	--ck-l5: #98a1b2;
-}
-:root[data-theme='light'] :is(.ck-tree, .ck-win) {
-	--ck-l0: #4f5bd5;
-	--ck-l1: #0f8a6a;
-	--ck-l2: #b7791f;
-	--ck-l3: #c2413b;
-	--ck-l4: #8a4fc0;
-	--ck-l5: #5d6573;
-}
 
 .ck-tree {
 	container: ck-tree / inline-size;
-	border: 1px solid var(--ck-tree-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.75rem;
-	background: var(--ck-tree-frame);
-	color: var(--ck-tree-ink);
+	background: var(--ck-frame);
+	color: var(--ck-ink);
 	font-size: 14.5px;
 	min-width: 0;
 }
@@ -51,7 +27,7 @@
 .ck-seg {
 	display: inline-flex;
 	flex-wrap: wrap;
-	border: 1px solid var(--ck-tree-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.5rem;
 	overflow: hidden;
 }
@@ -59,7 +35,7 @@
 .ck-tree-tools button {
 	border: 0;
 	background: none;
-	color: var(--ck-tree-muted);
+	color: var(--ck-ink-muted);
 	font: inherit;
 	font-size: 13.5px;
 	font-weight: 500;
@@ -67,28 +43,28 @@
 	cursor: pointer;
 }
 .ck-seg button[aria-pressed='true'] {
-	background: var(--ck-tree-card);
-	color: var(--ck-tree-ink);
-	box-shadow: inset 0 -2px 0 var(--ck-tree-hot);
+	background: var(--ck-card);
+	color: var(--ck-ink);
+	box-shadow: inset 0 -2px 0 var(--ck-accent);
 }
 .ck-tree-tools {
 	display: flex;
 	gap: 0.4rem;
 }
 .ck-tree-tools button {
-	border: 1px solid var(--ck-tree-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.45rem;
-	background: var(--ck-tree-card);
-	color: var(--ck-tree-ink);
+	background: var(--ck-card);
+	color: var(--ck-ink);
 }
 .ck-tree :is(button, a):focus-visible {
-	outline: 2px solid var(--ck-tree-hot);
+	outline: 2px solid var(--ck-accent);
 	outline-offset: 2px;
 }
 .ck-tree-hint {
 	margin: 0.5rem 0.9rem 0;
 	font-size: 13.5px;
-	color: var(--ck-tree-muted);
+	color: var(--ck-ink-muted);
 }
 
 /* The map scrolls inside the frame; the page never scrolls sideways. */
@@ -107,11 +83,11 @@
 	max-width: 17rem;
 	margin: 0;
 	padding: 0.4rem 0.7rem;
-	border: 1.5px solid var(--ck-tree-line);
+	border: 1.5px solid var(--ck-line);
 	border-left: 4px solid var(--ck-c);
 	border-radius: 0.55rem;
-	background: var(--ck-tree-card);
-	color: var(--ck-tree-ink);
+	background: var(--ck-card);
+	color: var(--ck-ink);
 	font: inherit;
 	font-size: 14.5px;
 	font-weight: 500;
@@ -121,13 +97,13 @@
 	transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
 }
 .ck-tc:hover {
-	border-color: color-mix(in srgb, var(--ck-c) 60%, var(--ck-tree-line));
+	border-color: color-mix(in srgb, var(--ck-c) 60%, var(--ck-line));
 	border-left-color: var(--ck-c);
 }
 .ck-tc.is-selected {
-	border-color: var(--ck-tree-hot);
+	border-color: var(--ck-selected);
 	border-left-color: var(--ck-c);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--ck-tree-hot) 30%, transparent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--ck-selected) 30%, transparent);
 }
 .ck-tc-label:not(.is-code) {
 	overflow-wrap: anywhere;
@@ -140,13 +116,13 @@
 .ck-tc-also {
 	font-size: 13.5px;
 	font-weight: 400;
-	color: var(--ck-tree-muted);
+	color: var(--ck-ink-muted);
 }
 .ck-tc.is-muted {
 	border-style: dashed;
 	border-left-style: solid;
-	background: var(--ck-tree-frame);
-	color: var(--ck-tree-muted);
+	background: var(--ck-muted-bg);
+	color: var(--ck-muted-ink);
 }
 
 /* Toggle: hidden-children count, or "−" when open */
@@ -156,16 +132,16 @@
 	height: 26px;
 	margin-left: 6px;
 	padding: 0;
-	border: 1.5px solid var(--ck-tree-line);
+	border: 1.5px solid var(--ck-line);
 	border-radius: 50%;
-	background: var(--ck-tree-frame);
-	color: var(--ck-tree-ink);
+	background: var(--ck-frame);
+	color: var(--ck-ink);
 	font: 600 12px var(--__sl-font-mono);
 	cursor: pointer;
 }
 .ck-tt[aria-expanded='true'] {
-	background: var(--ck-tree-card);
-	color: var(--ck-tree-muted);
+	background: var(--ck-card);
+	color: var(--ck-ink-muted);
 }
 .ck-tt-pad {
 	flex: none;
@@ -208,7 +184,7 @@
 }
 .ck-tree-wires path {
 	fill: none;
-	stroke: var(--ck-tree-wire);
+	stroke: var(--ck-wire);
 	stroke-width: 1.5;
 	transition: d 0.3s ease;
 }
@@ -218,7 +194,7 @@
 }
 /* A second relation of the selected card stands out. */
 .ck-tree-wires path.is-extra.is-hot {
-	stroke: var(--ck-tree-hot);
+	stroke: var(--ck-accent);
 	stroke-width: 2;
 	opacity: 1;
 }
@@ -229,7 +205,7 @@
 	font-size: 12px;
 	line-height: 14px;
 	white-space: nowrap;
-	color: var(--ck-tree-muted);
+	color: var(--ck-ink-muted);
 	transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
@@ -238,7 +214,7 @@
 	list-style: none;
 	margin: 0;
 	padding: 0 0 0 1.4rem;
-	border-left: 1px solid var(--ck-tree-line);
+	border-left: 1px solid var(--ck-line);
 }
 .ck-outline > ul {
 	padding-left: 0;
@@ -268,7 +244,7 @@
 	max-width: 100%;
 	padding: 0.25rem 0.6rem;
 	border-left-width: 1.5px;
-	border-left-color: var(--ck-tree-line);
+	border-left-color: var(--ck-line);
 }
 .ck-tc.is-row::before {
 	content: '';
@@ -295,7 +271,7 @@
 	top: 0;
 	bottom: 0;
 	left: 50%;
-	border-left: 2px solid color-mix(in srgb, var(--ck-tree-hot) 70%, var(--ck-tree-line));
+	border-left: 2px solid color-mix(in srgb, var(--ck-accent) 70%, var(--ck-line));
 	transform: translateX(-1px);
 }
 .ck-sp-section {
@@ -314,7 +290,7 @@
 }
 .ck-sp-cap span {
 	padding: 0.1rem 0.6rem;
-	background: var(--ck-tree-frame);
+	background: var(--ck-frame);
 }
 .ck-sp-row {
 	position: relative;
@@ -333,12 +309,16 @@
 	max-width: none;
 	align-items: center;
 	text-align: center;
-	background: color-mix(in srgb, var(--ck-c) 22%, var(--ck-tree-card));
+	background: color-mix(in srgb, var(--ck-c) var(--ck-head-tint), var(--ck-card));
 	border: 2px solid var(--ck-c);
 	font-weight: 600;
 }
 .ck-tc.is-head .ck-tc-also {
 	font-weight: 400;
+}
+/* Secondary text on a group-tinted card: the muted ink drops below 4.5:1 on the lighter hues' tints. */
+.ck-tc.is-head :is(.ck-tc-sub, .ck-tc-also) {
+	color: var(--ck-ink-2);
 }
 .ck-sp-side {
 	position: relative;
@@ -355,7 +335,7 @@
 	content: '';
 	flex: none;
 	width: 1.4rem;
-	border-top: 2px dotted var(--ck-tree-wire);
+	border-top: 2px dotted var(--ck-wire);
 }
 .ck-sp-side.is-left::after {
 	order: 2;
@@ -369,12 +349,12 @@
 	padding: 0.15rem 0;
 }
 .ck-sp-block.is-right {
-	border-left: 2px dotted var(--ck-tree-wire);
+	border-left: 2px dotted var(--ck-wire);
 	padding-left: 0.9rem;
 	justify-items: start;
 }
 .ck-sp-block.is-left {
-	border-right: 2px dotted var(--ck-tree-wire);
+	border-right: 2px dotted var(--ck-wire);
 	padding-right: 0.9rem;
 	justify-items: end;
 }
@@ -436,7 +416,7 @@
 	}
 	.ck-sp-block.is-left {
 		border-right: 0;
-		border-left: 2px dotted var(--ck-tree-wire);
+		border-left: 2px dotted var(--ck-wire);
 		padding-right: 0;
 		padding-left: 0.9rem;
 		justify-items: start;
@@ -454,9 +434,9 @@
 	gap: 0.3rem 1rem;
 	align-items: center;
 	padding: 0.6rem 0.9rem 0.8rem;
-	border-top: 1px solid var(--ck-tree-line);
+	border-top: 1px solid var(--ck-line);
 	font-size: 13.5px;
-	color: var(--ck-tree-muted);
+	color: var(--ck-ink-muted);
 }
 .ck-tree-legend ul {
 	display: flex;
@@ -491,11 +471,11 @@
 	min-height: 200px;
 	overflow: hidden;
 	resize: both;
-	border: 1px solid var(--ck-tree-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.75rem;
-	background: var(--sl-color-bg, var(--ck-tree-card));
-	color: var(--ck-tree-ink);
-	box-shadow: 0 18px 48px -12px rgb(0 0 0 / 0.55);
+	background: var(--ck-window);
+	color: var(--ck-ink);
+	box-shadow: var(--ck-shadow);
 	font-size: 15px;
 	line-height: 1.55;
 	animation: ck-pop 0.16s ease;
@@ -504,7 +484,7 @@
 	outline: none;
 }
 .ck-win:focus-visible {
-	outline: 2px solid var(--ck-tree-hot);
+	outline: 2px solid var(--ck-accent);
 }
 .ck-win.is-sheet {
 	left: 0;
@@ -522,7 +502,7 @@
 	align-items: center;
 	gap: 0.6rem;
 	padding: 0.55rem 0.6rem 0.55rem 0.9rem;
-	background: color-mix(in srgb, var(--ck-c) 20%, var(--ck-tree-frame));
+	background: color-mix(in srgb, var(--ck-c) 20%, var(--ck-frame));
 	border-bottom: 2px solid var(--ck-c);
 	cursor: move;
 	touch-action: none;
@@ -554,10 +534,10 @@
 	flex: none;
 	width: 2rem;
 	height: 2rem;
-	border: 1px solid var(--ck-tree-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.45rem;
-	background: var(--ck-tree-card);
-	color: var(--ck-tree-ink);
+	background: var(--ck-card);
+	color: var(--ck-ink);
 	font-size: 15px;
 	cursor: pointer;
 }
@@ -567,7 +547,7 @@
 	padding: 0.9rem 1.1rem 1.1rem;
 }
 .ck-win :is(button, a, input):focus-visible {
-	outline: 2px solid var(--ck-tree-hot);
+	outline: 2px solid var(--ck-accent);
 	outline-offset: 2px;
 }
 .ck-win-body p {
@@ -581,7 +561,7 @@
 	margin: 0.2rem 0;
 }
 .ck-win-link {
-	color: var(--sl-color-text-accent, var(--ck-tree-hot));
+	color: var(--ck-link);
 }
 @keyframes ck-pop {
 	from {

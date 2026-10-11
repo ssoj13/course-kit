@@ -1,50 +1,27 @@
 /*
  * Look of the react-flow roadmap (RoadmapView): a node-editor canvas in the spirit of Houdini / Blender networks.
- * Concept maps (mind maps, course object maps) use the tree look instead (tree.css). Colors are tokens on `.ck-graph`,
- * redefined for the light theme.
+ * Concept maps (mind maps, course object maps) use the tree look instead (tree.css). Every color is a `--ck-*` token of
+ * styles/theme.css, shared with the trees, so light/dark and site themes recolor both.
  */
 .ck-graph {
-	--ck-canvas: #12151c;
-	--ck-dots: #2a303c;
-	--ck-node-bg: #1b1f29;
-	--ck-node-line: #2e3544;
-	--ck-node-text: #e9edf5;
-	--ck-node-muted: #8c95a7;
-	--ck-wire: #5b6578;
-	--ck-wire-hot: #f4f6fb;
-	--ck-panel: #161a22;
-	--ck-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.9);
-	border: 1px solid var(--ck-node-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.75rem;
-	background: var(--ck-panel);
+	background: var(--ck-card);
 	overflow: hidden;
 }
-:root[data-theme='light'] .ck-graph {
-	--ck-canvas: #f6f7fa;
-	--ck-dots: #d3d8e2;
-	--ck-node-bg: #ffffff;
-	--ck-node-line: #d5dae4;
-	--ck-node-text: #161a22;
-	--ck-node-muted: #5d6779;
-	--ck-wire: #9aa3b3;
-	--ck-wire-hot: #1b1f29;
-	--ck-panel: #ffffff;
-	--ck-shadow: 0 8px 18px -12px rgb(20 30 50 / 0.35);
-}
-
 .ck-graph-canvas {
 	position: relative;
 	width: 100%;
-	background: var(--ck-canvas);
+	background: var(--ck-frame);
 	/* react-flow theme hooks */
-	--xy-background-color: var(--ck-canvas);
-	--xy-background-pattern-color: var(--ck-dots);
+	--xy-background-color: var(--ck-frame);
+	--xy-background-pattern-color: var(--ck-line);
 	--xy-edge-stroke: var(--ck-wire);
 	--xy-edge-stroke-width: 1.6;
-	--xy-controls-button-background-color: var(--ck-node-bg);
-	--xy-controls-button-background-color-hover: var(--ck-node-line);
-	--xy-controls-button-color: var(--ck-node-text);
-	--xy-controls-button-border-color: var(--ck-node-line);
+	--xy-controls-button-background-color: var(--ck-card);
+	--xy-controls-button-background-color-hover: var(--ck-line);
+	--xy-controls-button-color: var(--ck-ink);
+	--xy-controls-button-border-color: var(--ck-line);
 }
 .ck-graph-flow {
 	position: absolute;
@@ -68,21 +45,21 @@
 	gap: 0.4rem;
 }
 .ck-tool {
-	border: 1px solid var(--ck-node-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 999px;
-	background: var(--ck-node-bg);
-	color: var(--ck-node-text);
+	background: var(--ck-card);
+	color: var(--ck-ink);
 	font: inherit;
 	font-size: 0.75rem;
 	padding: 0.25rem 0.7rem;
 	cursor: pointer;
-	box-shadow: var(--ck-shadow);
+	box-shadow: var(--ck-shadow-sm);
 }
 .ck-tool:hover {
-	border-color: var(--sl-color-accent);
+	border-color: var(--ck-accent);
 }
 .ck-tool:focus-visible {
-	outline: 2px solid var(--sl-color-accent);
+	outline: 2px solid var(--ck-accent);
 	outline-offset: 2px;
 }
 
@@ -99,17 +76,17 @@
 	justify-content: center;
 	box-sizing: border-box;
 	padding: 0 0.75rem;
-	border: 1px solid var(--ck-node-line);
+	border: 1px solid var(--ck-line);
 	border-radius: 0.6rem;
-	background: var(--ck-node-bg);
-	color: var(--ck-node-text);
-	box-shadow: var(--ck-shadow);
+	background: var(--ck-card);
+	color: var(--ck-ink);
+	box-shadow: var(--ck-shadow-sm);
 	text-decoration: none;
 	font-size: 13px;
 	transition: border-color 0.15s, transform 0.15s;
 }
 .ck-road:hover {
-	border-color: var(--sl-color-accent);
+	border-color: var(--ck-accent);
 	transform: translateY(-1px);
 }
 .ck-road-row {
@@ -124,20 +101,20 @@
 	text-overflow: ellipsis;
 }
 .ck-road-module {
-	border-color: color-mix(in srgb, var(--sl-color-accent) 55%, var(--ck-node-line));
-	background: color-mix(in srgb, var(--sl-color-accent) 16%, var(--ck-node-bg));
+	border-color: color-mix(in srgb, var(--ck-accent) 55%, var(--ck-line));
+	background: color-mix(in srgb, var(--ck-accent) 16%, var(--ck-card));
 	font-weight: 650;
 	font-size: 14px;
 }
 .ck-road small {
 	font-weight: 400;
-	color: var(--ck-node-muted);
+	color: var(--ck-ink-muted);
 }
 .ck-road.is-done {
-	border-color: var(--sl-color-green);
+	border-color: var(--ck-ok);
 }
 .ck-road b {
-	color: var(--sl-color-green);
+	color: var(--ck-ok);
 }
 .ck-road.is-optional {
 	border-style: dashed;
@@ -148,10 +125,10 @@
 	min-width: 0;
 	min-height: 0;
 	border: 2px solid var(--ck-wire);
-	background: var(--ck-node-bg);
+	background: var(--ck-card);
 }
 .ck-spine .react-flow__edge-path {
-	stroke: var(--sl-color-accent);
+	stroke: var(--ck-accent);
 	stroke-width: 2.6;
 }
 

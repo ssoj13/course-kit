@@ -32,16 +32,18 @@ Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossar
 - `src/data.mjs` — manifest types (JSDoc) and validation; `src/links.mjs` — course link resolver + Markdown plugin.
 - `src/lib/` (TS, Vite side): `course.ts` (numbering/URLs), `graph.ts` (pure term-graph queries), `terms.ts`
   (binds graph.ts to the course), `tree.ts` (pure concept-tree model: forest, primary parents, tidy layout, spine,
-  details-window placement), `store.ts`, `progress.ts`, `element.ts`
+  details-window placement), `trainer.ts` (pure trainer core, see "Trainers"), `store.ts`, `progress.ts`, `element.ts`
   (custom-element base), `ui.ts`, `quiz.ts`, `route-links.ts` (Starlight middleware), `regions.ts` (pure region
   extraction), `snippets.ts` (build-time file reads via `virtual:course-kit/server`, which holds the project root and
   is kept separate from `virtual:course-kit/data` so local paths never reach a browser bundle).
 - `src/components/` — Astro components. React islands (`client:only="react"` plus a text fallback):
   `graph/TreeView.tsx` (concept trees: MindMap and course maps such as vulkan_en's ObjectGraph; see "Concept trees"),
-  `graph/RoadmapView.tsx` (@xyflow/react, the roadmap page only; `graph.css`, `Frame.tsx`, `flow.ts`, `lib/fit.ts`).
+  `graph/RoadmapView.tsx` (@xyflow/react, the roadmap page only; `graph.css`, `Frame.tsx`, `flow.ts`, `lib/fit.ts`),
+  `trainer/Trainer.tsx` (exercises on a TreeView, used from a course island; `trainer.css`).
 - `src/components/lab/` — lab primitives (React): `useTimeline.ts`, `Scrubber.tsx`, `LabFrame.tsx`, `lab.css`.
   `src/components/fullscreen.ts` — `useFullScreen()`, the one full-screen toggle of graph/Frame.tsx and LabFrame.
-- `src/pages/` — generated pages. `src/styles/lab.css` — widget design tokens/primitives.
+- `src/pages/` — generated pages. `src/styles/theme.css` — the color tokens (see "Theming"); `src/styles/lab.css` —
+  widget primitives (its `--lab-*` colors alias the tokens).
 - `fixture/` — minimal course that builds the engine end to end (`bun run fixture:build`); not a package.
 - `tests/` — `bun test` for the pure modules.
 
@@ -85,7 +87,7 @@ Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossar
 
 User-approved design (2026-10-11, gallery "D+E" + roadmap.sh): every concept map is a TREE. `TreeView` props:
 `items` ({id, label, def, group, parent, rel, relUp, extra[{id, rel, note}], code, sub, muted, facts, href,
-hrefLabel}), `groups` ({id, label, color = any CSS color, usually a theme-aware custom property}; order = sort,
+hrefLabel}), `groups` ({id, label, color = a palette token, `groupColor(i)`}; order = sort,
 spine and legend order), `label`, `reveal` (ids visible at start, or 'all'), `hint`, `prefer` (view before the
 reader picks one), `cardClass` / `renderDetails` (function props: only from another island, e.g. ObjectGraphView),
 `children` (rendered inside the frame under the legend).
@@ -106,8 +108,65 @@ reader picks one), `cardClass` / `renderDetails` (function props: only from anot
   API names break only between words (`<wbr>`).
 - MindMap: lesson mode adds a "Lesson N: title" root; primary parent = strongest relation (built-on > part-of >
   is-a > uses > related) via `pickParents` (cycle-safe: uses/related are not acyclic); terms of other lessons are
-  muted with "lesson N" and their lesson link; groups = layers (`--ck-l0..5` in tree.css, light + dark);
+  muted with "lesson N" and their lesson link; groups = layers (layer i = palette entry `groupColor(i)`, see "Theming");
   `mode="all"` (roadmap page) is a forest that prefers the collapse view.
+## Theming (v0.6.0)
+
+Every color of the engine's widgets is a `--ck-*` custom property defined ONCE in `src/styles/theme.css` (loaded first
+through Starlight `customCss`, so the portal'd details window sees it too). Component CSS and TSX only read tokens;
+a literal color anywhere else in `src/components` is a bug (the Starlight page chrome in pages/*.astro, Quiz, CourseMap
+uses `--sl-color-*` directly and is not a widget).
+- Surfaces/ink derive from Starlight (`--ck-frame`, `--ck-card`, `--ck-window`, `--ck-line`, `--ck-ink`, `--ck-ink-2`,
+  `--ck-ink-muted`, `--ck-link`, `--ck-wire`, `--ck-accent`, `--ck-primary`/`--ck-on-primary`, `--ck-shadow`,
+  `--ck-shadow-sm`), so light/dark need no second definition; feedback `--ck-ok/-warn/-err` switch to Starlight's
+  `-high` shades in light (the plain ones are pastel, 1.8:1 on white). Card states: `--ck-selected`, `--ck-muted-bg/-ink`,
+  `--ck-locked-bg/-ink`, `--ck-error`, `--ck-head-tint` / `--ck-done-tint` (share of the group color in a tinted card).
+- Group palette `--ck-group-1..12` (dark + light values). Courses map their groups by index with `groupColor(i)`
+  (TreeView.tsx, 0-based, wraps at `GROUP_COLORS` = 12): MindMap maps term layer i -> entry i; vulkan_en maps its 9
+  object stages (ObjectGraph.astro `STAGE_COLOR`).
+- A site theme = one block in the course's customCss overriding tokens under `:root` AND `:root[data-theme='light']`
+  (the engine's light block has higher specificity than a plain `:root`). Proof: fixture lab `theme`
+  (`fixture/src/components/HighContrast.astro`, scoped to its page with `:root:has(.fx-high-contrast)`).
+- Contrast (WCAG AA 4.5:1 for body text, measured in headless Chrome on the fixture and vulkan_en, 2026-10-11): every
+  text of cards (all statuses), window, console, legend and toolbar passes in default dark, default light and the
+  high-contrast override. Traps found: plain gray-3 is 4.49:1 on the dark frame (hence `--ck-ink-muted` = 50 % mix of
+  gray-2 and gray-3); muted ink on group-tinted cards drops to ~4.1:1 for the light hues, so secondary text on tinted
+  cards (spine heads, done cards) uses `--ck-ink-2`; the dark accent under black text is 3.9:1 (hence `--ck-primary` =
+  accent-high in dark); light palette entries are dark enough to be caption text on the frame (>= 4.76:1).
+
+## Trainers (v0.6.0)
+
+A trainer is a "build it yourself" exercise on a concept tree: the reader acts on cards (create, destroy, any verb),
+rules refuse wrong actions with the quoted rule, the console logs everything, goals say when it is done. The engine
+owns everything generic; a course supplies a scenario (data + rule functions) and the tree items.
+- Core `src/lib/trainer.ts` (pure, tests/trainer.test.ts): `Scenario<S>` = `{ id, init, items, verbs(state, item),
+  status(state, item), goals }`; `Verb<S>` = `{ id, label, primary?, options? (checkboxes), check(state, opts) ->
+  Failure[] (any failure refuses; Entry {kind, text, ref?}: ref = rule id, e.g. a VUID), apply(state, opts) -> {state,
+  log} }`; statuses `locked | ready | done | error`; `allDone(label, ids?)` goal. A run is the list of acts:
+  `act`, `replay` (stops at the first stale act), `undo`, `why` (the main verb's failures of a locked item, remarks
+  dropped), `goalsOf`/`complete`, `counts`, `encode`/`decode` (storage holds acts only, `{ v: 1, acts }`).
+- UI `src/components/trainer/Trainer.tsx`: renders the scenario on TreeView (all four views; card class `is-<status>`,
+  styled in trainer.css), the window = course `body(item)` + status (`statusText` override) + reasons + verb buttons +
+  last result; under the map: progress (`progressText` override), goals, completion message (role=status, flash),
+  Undo, Start over, console (`startHint`, newest `lines`). Run stored per page and exercise
+  (`trainerKey(location.pathname, scenario.id)`, store.ts guards blocked storage). Texts: `trainer*` keys in i18n.mjs.
+- The engine never words subject matter: entries arrive as text in the reader's language; validation texts are passed
+  verbatim (the course resolves them, e.g. vulkan_en `vuid()`).
+
+### How to add a trainer (course side)
+
+1. Model: a pure module with the subject's state and rules (vulkan_en: `src/lib/objects.ts`), tested on its own.
+2. Scenario: a pure function `(ids, lang) => Scenario<S>` that wraps the model (vulkan_en: `src/lib/object-trainer.ts`):
+   verb ids are stable (they are stored), `check` returns the refusals (VUID texts through the course's single source),
+   `apply` the transition plus console lines, `status` maps the model onto the four statuses, `goals` say when it is done.
+   Test it with the engine core (`act`/`replay`/`undo`/`why`/`complete`) like tests/object-trainer.test.ts.
+3. View: a React island (`client:only="react"`) builds `TreeItem`s/`TreeGroup`s (colors `groupColor(i)`), memoizes the
+   scenario, and renders `<Trainer lang scenario items groups label body ... />`; an .astro wrapper validates data at
+   build time and passes plain data (functions cannot cross the island boundary).
+4. Texts: course-specific strings in the course's tables (EN + RU, parity tests); generic trainer chrome is the engine's.
+5. Check: unit tests, `bun run check`, a browser pass (create/refuse/undo/reload restores the run), contrast if the
+   course adds colors (it should not: use tokens).
+
 ## Quiz model
 
 `{ q, options: [{ text, why }] x4, answer, ref }`: grading on click, shared `flash()` (lab.css: 1 s in, 5 s out),
@@ -161,4 +220,11 @@ find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
       MindMap on the tree; GraphView, lib/layout.ts and dagre removed; the roadmap stays react-flow
 - [ ] Concept trees: a reader-facing check of keyboard use in a real (non-headless) browser and of the window resize
       handle on touch devices (headless Chrome verified click, Create, swap, Escape, focus return in all four views)
+- [x] Theming (v0.6.0): `--ck-*` tokens in styles/theme.css (one definition, light + dark, palette of 12), trees,
+      window, roadmap and lab primitives on them; high-contrast override in the fixture; contrast measured (AA)
+- [x] Trainers (v0.6.0): lib/trainer.ts core + tests, trainer/Trainer.tsx on TreeView, persistence per page, fixture lab
+      `trainer` (toy house scenario, also the core's test subject); vulkan_en ObjectGraph build mode ported
+- [ ] Trainers: next scenarios in vulkan_en (frame assembly with fences/semaphores, barriers, image layouts, descriptor
+      wiring, pipeline creation); if one needs a non-tree board (timeline lanes), extend Trainer with a second view
+      instead of forking it
 - [ ] Migration of vllm_en (progress keys were `vllm-course:` prefixed; its widgets) and math_en

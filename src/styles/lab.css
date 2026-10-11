@@ -1,20 +1,21 @@
 /*
  * Shared design tokens and primitives for interactive lab widgets.
  * Widgets keep their own layout in scoped <style> blocks and build on these classes,
- * so every widget looks like one system in both Starlight themes.
+ * so every widget looks like one system in both Starlight themes. The `--lab-*` colors are aliases of the engine
+ * tokens (theme.css), so one site theme recolors labs and trees alike.
  */
 :root {
 	--lab-radius: 0.6rem;
 	--lab-gap: 0.75rem;
-	--lab-border: var(--sl-color-gray-5);
+	--lab-border: var(--ck-line);
 	--lab-surface: var(--sl-color-gray-6);
-	--lab-surface-2: var(--sl-color-black);
-	--lab-text-muted: var(--sl-color-gray-3);
-	--lab-accent: var(--sl-color-accent);
+	--lab-surface-2: var(--ck-card);
+	--lab-text-muted: var(--ck-ink-muted);
+	--lab-accent: var(--ck-accent);
 	--lab-accent-high: var(--sl-color-accent-high);
-	--lab-ok: var(--sl-color-green);
-	--lab-warn: var(--sl-color-orange);
-	--lab-err: var(--sl-color-red);
+	--lab-ok: var(--ck-ok);
+	--lab-warn: var(--ck-warn);
+	--lab-err: var(--ck-err);
 	/* Chart series: weights, KV cache, overhead, free/headroom. */
 	--lab-series-1: #4f8ff7;
 	--lab-series-2: #e5a33b;
@@ -146,9 +147,9 @@
 	cursor: not-allowed;
 }
 .lab-button.is-primary {
-	background: var(--lab-accent);
-	border-color: var(--lab-accent);
-	color: var(--sl-color-black);
+	background: var(--ck-primary);
+	border-color: var(--ck-primary);
+	color: var(--ck-on-primary);
 	font-weight: 600;
 }
 .lab-button.is-danger {

@@ -138,6 +138,21 @@ const EN = {
 	scrubForward: 'Step forward',
 	scrubSlider: 'Timeline position',
 	scrubStep: 'Step {i} of {n}',
+	// Trainers (trainer/Trainer.tsx): exercises on a concept tree
+	trainerUndo: 'Undo',
+	trainerRestart: 'Start over',
+	trainerLast: 'Last result',
+	trainerProgress: 'Done {done}/{total} · errors: {errors}',
+	trainerGoals: 'Goals',
+	trainerMet: 'reached',
+	trainerNotMet: 'not reached yet',
+	trainerComplete: 'Exercise complete: every goal is reached. Undo some steps or start over to try another order.',
+	trainerEmpty: 'Pick a card and use the buttons in its window.',
+	trainerConsole: 'Console',
+	trainerLocked: 'Not available yet:',
+	trainerReady: 'Can be done now.',
+	trainerDone: 'Done.',
+	trainerError: 'Broken: something it depends on is gone.',
 };
 
 /** @type {UiText} */
@@ -257,6 +272,20 @@ const RU = {
 	scrubForward: 'Шаг вперёд',
 	scrubSlider: 'Положение на шкале',
 	scrubStep: 'Шаг {i} из {n}',
+	trainerUndo: 'Отменить',
+	trainerRestart: 'Начать заново',
+	trainerLast: 'Последний результат',
+	trainerProgress: 'Готово {done}/{total} · ошибок: {errors}',
+	trainerGoals: 'Цели',
+	trainerMet: 'достигнута',
+	trainerNotMet: 'ещё не достигнута',
+	trainerComplete: 'Упражнение выполнено: все цели достигнуты. Отмените несколько шагов или начните заново, чтобы попробовать другой порядок.',
+	trainerEmpty: 'Выберите карточку и нажмите кнопку в её окне.',
+	trainerConsole: 'Консоль',
+	trainerLocked: 'Пока недоступно:',
+	trainerReady: 'Можно сделать прямо сейчас.',
+	trainerDone: 'Готово.',
+	trainerError: 'Сломано: то, от чего оно зависит, уже уничтожено.',
 };
 
 /** Interface texts per language code. */

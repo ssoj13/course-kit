@@ -1,0 +1,136 @@
+/*
+ * Trainer look (Trainer.tsx): card statuses on the concept tree, the exercise part of the details window and the
+ * console under the map. Colors are `--ck-*` tokens (styles/theme.css) only. The window lives in a portal outside
+ * `.ck-trainer`, so its classes (`ck-tr-*`) are not scoped under it.
+ */
+
+/* Card statuses, in every view: cannot be acted on yet, can be done now, done, broken. */
+.ck-trainer .ck-tc.is-locked {
+	/* Dimmed by color, not opacity: a see-through card would show the spine line behind it. */
+	color: var(--ck-locked-ink);
+	background: var(--ck-locked-bg);
+	border-style: dashed;
+	border-left-style: solid;
+}
+.ck-trainer .ck-tc.is-ready {
+	border-style: dashed;
+	border-color: var(--ck-c);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--ck-c) 30%, transparent);
+	animation: ck-tr-ready 1.6s ease-in-out infinite;
+}
+.ck-trainer .ck-tc.is-done {
+	border-color: var(--ck-c);
+	background: color-mix(in srgb, var(--ck-c) var(--ck-done-tint), var(--ck-card));
+}
+/* Secondary text on the tinted card (see tree.css: the muted ink is too faint on light hues' tints). */
+.ck-trainer .ck-tc.is-done :is(.ck-tc-sub, .ck-tc-also) {
+	color: var(--ck-ink-2);
+}
+.ck-trainer .ck-tc.is-error {
+	--ck-c: var(--ck-error);
+	border-style: dashed;
+	border-color: var(--ck-error);
+}
+@keyframes ck-tr-ready {
+	50% {
+		box-shadow: 0 0 0 6px color-mix(in srgb, var(--ck-c) 15%, transparent);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.ck-trainer .ck-tc.is-ready {
+		animation: none;
+	}
+}
+
+/* Details window: status, reasons, actions, last result */
+.ck-tr-panel {
+	margin-top: 0.9rem;
+	padding-top: 0.7rem;
+	border-top: 1px solid var(--ck-line);
+}
+.ck-tr-state {
+	font-weight: 600;
+}
+.ck-tr-state.is-done {
+	color: var(--ck-ok);
+}
+.ck-tr-state.is-error {
+	color: var(--ck-err);
+}
+.ck-tr-actions {
+	margin: 0.5rem 0;
+}
+.ck-tr-check {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 14px;
+}
+.ck-tr-check input {
+	accent-color: var(--ck-accent);
+}
+.ck-tr-last {
+	margin: 0.8rem 0 0.2rem;
+	font-size: 13.5px;
+	color: var(--ck-ink-muted);
+}
+
+/* Console under the map */
+.ck-tr-console {
+	border-top: 1px solid var(--ck-line);
+	padding: 0.55rem 0.9rem 0.8rem;
+}
+.ck-tr-head {
+	justify-content: space-between;
+	font-size: 14px;
+	color: var(--ck-ink-2);
+}
+.ck-tr-buttons {
+	gap: 0.5rem;
+}
+.ck-tr-goals {
+	list-style: none;
+	margin: 0.5rem 0 0;
+	padding: 0;
+	font-size: 14px;
+	color: var(--ck-ink-2);
+}
+.ck-tr-goals li.is-met {
+	color: var(--ck-ok);
+}
+.ck-tr-done {
+	margin: 0.5rem 0 0;
+	padding: 0.45rem 0.7rem;
+	border: 1px solid var(--ck-ok);
+	border-radius: 0.5rem;
+	color: var(--ck-ink);
+	font-size: 14px;
+}
+.ck-tr-log {
+	list-style: none;
+	margin: 0.5rem 0 0;
+	padding: 0.55rem 0.75rem;
+	max-height: 14rem;
+	overflow: auto;
+	background: var(--ck-card);
+	border: 1px solid var(--ck-line);
+	border-radius: 0.5rem;
+	font-family: var(--__sl-font-mono);
+	font-size: 13.5px;
+	overflow-wrap: anywhere;
+}
+.ck-tr-log li {
+	margin: 0.15rem 0;
+}
+.ck-tr-log .is-call {
+	color: var(--ck-ok);
+}
+.ck-tr-log .is-error {
+	color: var(--ck-err);
+}
+.ck-tr-log .is-warn {
+	color: var(--ck-warn);
+}
+.ck-tr-log .is-info {
+	color: var(--ck-ink-2);
+}

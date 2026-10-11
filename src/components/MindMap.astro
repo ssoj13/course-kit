@@ -14,7 +14,7 @@
  *   <MindMap term="instance" mode="unlocks" /> everything built on the term
  *   <MindMap mode="all" />                   the whole graph (a forest: roots = terms built on nothing)
  */
-import TreeView, { type TreeGroup, type TreeItem } from './graph/TreeView.tsx';
+import TreeView, { groupColor, type TreeGroup, type TreeItem } from './graph/TreeView.tsx';
 import { ancestors, descendants, everything, isCode, lessonMap, neighborhood, type EdgeJson, type EdgeType, type SubGraph } from '../lib/graph';
 import { pickParents, type Candidate } from '../lib/tree';
 import { graphIn } from '../lib/terms';
@@ -83,8 +83,9 @@ const items: TreeItem[] = sub.terms.map((t) => {
 	};
 });
 if (here) items.unshift({ id: ROOT, label: v.tf('treeLessonRoot', { n: here.num, title: here.title }), def: v.t.treeLessonRootDef, group: '' });
-// Colors follow the global layer index, so a layer keeps its color on every map.
-const groups: TreeGroup[] = graph.layers.map((l, i) => ({ id: l.id, label: l.label, color: `var(--ck-l${i % 6})` }));
+// Colors follow the global layer index (layer i -> palette entry i + 1 of theme.css), so a layer keeps its color on
+// every map.
+const groups: TreeGroup[] = graph.layers.map((l, i) => ({ id: l.id, label: l.label, color: groupColor(i) }));
 const reveal = here ? sub.terms.filter((t) => t.lesson === here.slug).map((t) => t.id) : mode === 'all' ? undefined : 'all';
 const label = here ? v.tf('moduleLessonMap', { n: here.num, title: here.title }) : v.t.knowledgeMap;
 ---
@@ -119,7 +120,7 @@ const label = here ? v.tf('moduleLessonMap', { n: here.num, title: here.title })
 	figcaption {
 		margin-top: 0.4rem;
 		font-size: var(--sl-text-sm);
-		color: var(--sl-color-gray-3);
+		color: var(--ck-ink-muted);
 	}
 	.ck-mindmap-text {
 		margin-top: 0.4rem;
@@ -127,6 +128,6 @@ const label = here ? v.tf('moduleLessonMap', { n: here.num, title: here.title })
 	}
 	.ck-mindmap-text summary {
 		cursor: pointer;
-		color: var(--sl-color-gray-3);
+		color: var(--ck-ink-muted);
 	}
 </style>

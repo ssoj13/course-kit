@@ -34,7 +34,8 @@ export type CourseOptions = {
      */
     reference?: any[] | undefined;
     /**
-     * course stylesheets, loaded after the engine's
+     * course stylesheets, loaded after the engine's (a site theme overrides the
+     * `--ck-*` tokens of styles/theme.css here)
      */
     customCss?: string[] | undefined;
     /**

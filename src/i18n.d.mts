@@ -156,6 +156,20 @@ declare namespace EN {
     let scrubForward: string;
     let scrubSlider: string;
     let scrubStep: string;
+    let trainerUndo: string;
+    let trainerRestart: string;
+    let trainerLast: string;
+    let trainerProgress: string;
+    let trainerGoals: string;
+    let trainerMet: string;
+    let trainerNotMet: string;
+    let trainerComplete: string;
+    let trainerEmpty: string;
+    let trainerConsole: string;
+    let trainerLocked: string;
+    let trainerReady: string;
+    let trainerDone: string;
+    let trainerError: string;
 }
 /** @type {UiText} */
 declare const RU: UiText;
