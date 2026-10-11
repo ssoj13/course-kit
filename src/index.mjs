@@ -3,7 +3,7 @@
  *
  * A course repo keeps only content (MDX lessons, its own widgets) and two manifests (course.json, terms.json);
  * everything generic is assembled here: Starlight with the sidebar generated from course.json, React islands,
- * build-time course links, generated pages (module overviews, roadmap, glossary, 404), progress marks and the
+ * build-time course links, generated pages (module overviews, roadmap, glossary, lab catalog, 404), progress marks and the
  * `virtual:course-kit/data` module through which components read the validated manifests.
  * Plain ESM + JSDoc: this file is imported by astro.config.mjs under Node (see data.mjs).
  */
@@ -114,6 +114,20 @@ export function defineCourse(o) {
 			}),
 		],
 	}));
+	// Labs: the generated catalog, then every lab page in catalog order. No group at all for a course without labs.
+	const labs = course.labs ?? [];
+	const labText = (/** @type {string} */ c, /** @type {number} */ i) => /** @type {import('./data.mjs').LabJson[]} */ (courses[c].labs)[i].title;
+	const labGroups = labs.length
+		? [
+				{
+					...label((c) => ui(c).labs),
+					items: [
+						{ ...label((c) => ui(c).allLabs), link: '/labs/', attrs: { class: 'module-overview-link' } },
+						...labs.map((l, i) => ({ ...label((c) => labText(c, i)), slug: `labs/${l.slug}` })),
+					],
+				},
+			]
+		: [];
 
 	return {
 		site: o.site,
@@ -156,6 +170,7 @@ export function defineCourse(o) {
 					{ ...label((c) => ui(c).home), link: '/' },
 					{ ...label((c) => ui(c).roadmap), link: '/roadmap/' },
 					...moduleGroups,
+					...labGroups,
 					{ ...label((c) => ui(c).reference), items: [{ ...label((c) => ui(c).glossary), link: '/glossary/' }, ...(o.reference ?? [])] },
 				],
 			}),
@@ -172,6 +187,7 @@ export function defineCourse(o) {
 							injectRoute({ pattern: `${l.prefix}/[module]`, entrypoint: own('./pages/module.astro') });
 							injectRoute({ pattern: `${l.prefix}/roadmap`, entrypoint: own('./pages/roadmap.astro') });
 							injectRoute({ pattern: `${l.prefix}/glossary`, entrypoint: own('./pages/glossary.astro') });
+							if (labs.length) injectRoute({ pattern: `${l.prefix}/labs`, entrypoint: own('./pages/labs.astro') });
 						}
 						// GitHub Pages serves one 404.html for every path, so there is one 404 page (in all languages).
 						injectRoute({ pattern: '/404', entrypoint: own('./pages/404.astro') });
@@ -183,14 +199,18 @@ export function defineCourse(o) {
 }
 
 /**
- * The home page and every lesson in course.json must have a page (`<docs>/index.md[x]`,
- * `<docs>/<module>/<lesson>.md[x]`), in every language: a missing file would
+ * The home page, every lesson and every lab in course.json must have a page (`<docs>/index.md[x]`,
+ * `<docs>/<module>/<lesson>.md[x]`, `<docs>/labs/<lab>.md[x]`), in every language: a missing file would
  * otherwise only show up as a 404 behind a sidebar link.
  * @param {import('./data.mjs').CourseJson} course
  * @param {URL} docs
  */
 function checkLessonFiles(course, docs) {
-	const missing = ['index', ...course.modules.flatMap((m) => m.lessons.map((l) => `${m.slug}/${l.slug}`))].filter(
+	const missing = [
+		'index',
+		...course.modules.flatMap((m) => m.lessons.map((l) => `${m.slug}/${l.slug}`)),
+		...(course.labs ?? []).map((l) => `labs/${l.slug}`),
+	].filter(
 		(p) => !['.mdx', '.md'].some((ext) => existsSync(new URL(p + ext, docs))),
 	);
 	if (missing.length) {

@@ -12,5 +12,9 @@
         { "slug": "two", "title": "Lesson two with a long title", "short": "Lesson two", "summary": "Genealogy map." }
       ]
     }
+  ],
+  "labs": [
+    { "slug": "counter", "title": "Counter", "summary": "Step a counter from zero to five and back.", "lesson": "one" },
+    { "slug": "preview", "title": "Preview", "summary": "A lab that belongs to no lesson yet." }
   ]
 }

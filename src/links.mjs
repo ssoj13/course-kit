@@ -1,7 +1,9 @@
 /**
  * Course links, resolved at build time so a renamed lesson or term breaks the build instead of a page:
  *   lesson:<slug>[#anchor] -> <base><lang>/<module>/<slug>/[#anchor]
- *   page:<name>[#anchor]   -> <base><lang>/<path>/            (engine pages + the course's own `pages` option)
+ *   lab:<slug>[#anchor]    -> <base><lang>/labs/<slug>/[#anchor]
+ *   page:<name>[#anchor]   -> <base><lang>/<path>/            (engine pages + the course's own `pages` option;
+ *                                                             `labs` = the lab catalog, when the course has labs)
  *   term:<id>              -> <base><lang>/glossary/#term-<id>
  * `<lang>` is empty for the default language and `/<code>` for the others: a link always stays in the language of
  * the page it is on. Used by the Markdown plugin below, by the Starlight route middleware (hero action links in
@@ -27,7 +29,9 @@ export function makeResolver(course, terms, pages, base, prefix = '') {
 	/** @type {Map<string, string>} */
 	const lessons = new Map(course.modules.flatMap((m) => m.lessons.map((l) => [l.slug, `${m.slug}/${l.slug}`])));
 	/** @type {Map<string, string>} */
-	const pageMap = new Map(Object.entries({ ...ENGINE_PAGES, ...pages }));
+	const labs = new Map((course.labs ?? []).map((l) => [l.slug, `labs/${l.slug}`]));
+	/** @type {Map<string, string>} */
+	const pageMap = new Map(Object.entries({ ...ENGINE_PAGES, ...(labs.size > 0 && { labs: 'labs' }), ...pages }));
 	const termIds = new Set(terms.terms.map((t) => t.id));
 
 	/**
@@ -37,7 +41,7 @@ export function makeResolver(course, terms, pages, base, prefix = '') {
 	 * @returns {string | null}
 	 */
 	return function resolve(url, where = 'unknown file') {
-		const m = /^(lesson|page|term):([^#]*)(#.*)?$/.exec(url);
+		const m = /^(lesson|lab|page|term):([^#]*)(#.*)?$/.exec(url);
 		if (!m) return null;
 		const [, scheme, name, hash = ''] = m;
 		if (scheme === 'term') {
@@ -45,10 +49,10 @@ export function makeResolver(course, terms, pages, base, prefix = '') {
 			if (hash) throw new Error(`${where}: "${url}": term links take no #anchor`);
 			return `${root}/glossary/#${termAnchor(name)}`;
 		}
-		const table = scheme === 'lesson' ? lessons : pageMap;
+		const table = scheme === 'lesson' ? lessons : scheme === 'lab' ? labs : pageMap;
 		const path = table.get(name);
 		if (path === undefined) {
-			throw new Error(`${where}: unknown course link "${scheme}:${name}" (known: ${[...table.keys()].join(', ')})`);
+			throw new Error(`${where}: unknown course link "${scheme}:${name}" (known: ${[...table.keys()].join(', ') || 'none'})`);
 		}
 		return `${root}/${path ? `${path}/` : ''}${hash}`;
 	};

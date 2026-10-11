@@ -255,7 +255,7 @@
 	color: var(--lab-ok);
 }
 
-/* Sidebar: the per-module overview entry (astro.config.mjs) reads as navigation, not as a lesson. */
+/* Sidebar: the per-module overview entry and "All labs" (index.mjs) read as navigation, not as a lesson or a lab. */
 .sidebar-content a.module-overview-link {
 	font-style: italic;
 	color: var(--sl-color-gray-3);

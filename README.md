@@ -6,8 +6,9 @@ its own widgets) and two JSON manifests. course-kit turns them into a full site:
 
 - **Sidebar and numbering from `course.json`.** Modules and lessons get global numbers. Generated pages cover module
   overviews, the course roadmap, the glossary and a 404.
-- **Links that fail the build.** `lesson:<slug>`, `page:<name>` and `term:<id>` resolve at build time, so a typo
-  breaks the build instead of a page. The build also checks that every lesson in the manifest has a page.
+- **Links that fail the build.** `lesson:<slug>`, `lab:<slug>`, `page:<name>` and `term:<id>` resolve at build time,
+  so a typo breaks the build instead of a page. The build also checks that every lesson and lab in the manifest has
+  a page.
 - **Mind maps from one term graph, `terms.json`.** Every term has a one-line definition, and typed relations connect
   the terms (built on, a kind of, part of, uses, related). Lesson maps, genealogy ("down to the roots"), the full
   knowledge map and the glossary are all generated from it.
@@ -24,6 +25,9 @@ its own widgets) and two JSON manifests. course-kit turns them into a full site:
   and on the roadmap, with export and import. A quiz grades the moment an option is picked: the option flashes,
   the reader gets the reason why it is right or wrong, and a link to the section that explains it. Quizzes are
   validated at build time, including dead section links and a limit on answers that option length gives away (the longest or the shortest option is the answer).
+
+- **Labs.** Interactive simulations get their own pages, a generated catalog, a sidebar group, `lab:` links and a box on
+  the lesson they belong to. Generic React primitives cover the scrubbable timeline every lab is built on.
 
 ## Use it in a course
 
@@ -133,11 +137,76 @@ Read [the next lesson](lesson:second), the [roadmap](page:roadmap) or about <Ter
 Source files mark regions with line comments, `// #region setup` ... `// #endregion`, and the markers are never
 shown.
 
+### Labs
+
+A lab is an interactive simulation with a page of its own. Labs are listed in `course.json`, in catalog order:
+
+```json
+"labs": [
+  { "slug": "frames-in-flight", "title": "Frames in flight", "summary": "CPU and GPU lanes, fences, semaphores.", "lesson": "sync-basics" }
+]
+```
+
+- `lesson` is the slug of the lesson the lab belongs to. Leave it out for a lab that previews later material.
+- Lab slugs are kebab-case and unique among labs. No module may be named `labs`.
+- Every language needs a page `src/content/docs/[<code>/]labs/<slug>.mdx`. A missing page fails the build.
+- Overlays translate labs with `"labs": { "<slug>": { "title": "…", "summary": "…" } }`. When the course has labs,
+  every lab needs an entry.
+
+What the engine generates from that list:
+
+- a catalog at `/labs/` (`page:labs`): labs grouped by the module of their lesson, in course order, and labs without
+  a lesson in a last group, "Ahead in the course";
+- a sidebar group "Labs" between the modules and "Reference", with "All labs" first and then every lab;
+- `lab:<slug>[#anchor]` links in Markdown, which stay in the page's language and fail the build on an unknown slug;
+- a "Labs for this lesson" box at the end of each lesson that has labs, and a "Lab · Lesson N — title" eyebrow on
+  every lab page.
+
+Components read the same data through `courseIn(lang)` (`lib/course.ts`): `labs`, `labHref(slug)`,
+`labsOf(lessonSlug)` and `labByPath(path)`.
+
+A lab precomputes its simulation as an array of frames, one state per step. The controls then only move an index
+over that array, so stepping back is exact. The engine provides three React primitives for this:
+
+- `useTimeline(frames, { ms?, autoplay? })` (`components/lab/useTimeline.ts`) returns
+  `{ index, frame, count, step(d), seek(i), play(), pause(), playing, reset() }`. Playback shows each frame for `ms`
+  (default 900) and stops on the last one. A manual move pauses it. `autoplay` is skipped under
+  prefers-reduced-motion. The index rules live in `lib/timeline.ts` and are unit-tested.
+- `<Scrubber lang tl caption? />` (`components/lab/Scrubber.tsx`) draws the controls: back to the start, step back,
+  play/pause, step forward, a slider, "Step i of n" and the caption. With focus on the controls, ← and → step and
+  Space plays or pauses.
+- `<LabFrame lang title? onReset?>` (`components/lab/LabFrame.tsx`) is the card around a lab. It has an optional
+  title, a reset button when `onReset` is given, and the same full-screen toggle as the graphs (Esc closes it).
+
+```tsx
+// src/components/CounterLab.tsx (course side)
+import { LabFrame } from 'course-kit/components/lab/LabFrame.tsx';
+import { Scrubber } from 'course-kit/components/lab/Scrubber.tsx';
+import { useTimeline } from 'course-kit/components/lab/useTimeline.ts';
+
+export default function CounterLab({ lang, captions }: { lang: string; captions: string[] }) {
+  const tl = useTimeline(captions);
+  return (
+    <LabFrame lang={lang} title="Counter" onReset={tl.reset}>
+      <p>{tl.index}</p>
+      <Scrubber lang={lang} tl={tl} caption={tl.frame} />
+    </LabFrame>
+  );
+}
+```
+
+```mdx
+{/* src/content/docs/labs/counter.mdx */}
+import CounterLab from '../../../components/CounterLab.tsx';
+
+<CounterLab client:load lang="en" captions={['Zero.', 'One.', 'Two.']} />
+```
+
 ## Develop
 
 ```sh
 bun install
-bun test tests          # unit tests: manifests, links, graph queries, regions
+bun test tests          # unit tests: manifests, links, graph queries, regions, timeline
 bun run check           # type check (engine + fixture)
 bun run fixture:build   # build the small fixture course end to end
 ```

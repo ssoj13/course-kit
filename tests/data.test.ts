@@ -53,6 +53,34 @@ describe('checkCourse', () => {
 	});
 });
 
+describe('labs in course.json', () => {
+	const withLabs = () => ({
+		...clone(course),
+		labs: [
+			{ slug: 'sim', title: 'Sim', summary: 'A simulation.', lesson: 'a' },
+			{ slug: 'later', title: 'Later', summary: 'No lesson yet.' },
+		],
+	});
+	test('labs are optional, and a lab may belong to no lesson', () => {
+		expect(checkCourse(clone(course)).labs).toBeUndefined();
+		expect(checkCourse(withLabs()).labs).toHaveLength(2);
+	});
+	test('bad lesson ref, duplicate and bad slugs, empty texts', () => {
+		const bad = withLabs() as any;
+		bad.labs[0].lesson = 'nope';
+		bad.labs[1].slug = 'sim';
+		bad.labs.push({ slug: 'Bad Slug', title: '', summary: ' ' });
+		expect(() => checkCourse(bad)).toThrow(
+			/labs\[0\] "sim": unknown lesson "nope"[\s\S]*labs\[1\] "sim": duplicate lab slug[\s\S]*labs\[2\] "Bad Slug": bad slug[\s\S]*empty title[\s\S]*empty summary/,
+		);
+	});
+	test('`labs` must be an array, no module may be named `labs`', () => {
+		const bad = { ...clone(course), labs: {} } as any;
+		bad.modules[0].slug = 'labs';
+		expect(() => checkCourse(bad)).toThrow(/"labs": slug is reserved[\s\S]*`labs` must be an array/);
+	});
+});
+
 describe('checkTerms', () => {
 	const c = checkCourse(clone(course));
 	test('accepts a valid graph', () => {
@@ -103,6 +131,16 @@ describe('links', () => {
 	test('unknown targets fail with the file name', () => {
 		expect(() => resolve('lesson:nope', 'x.mdx')).toThrow(/x\.mdx: unknown course link "lesson:nope"/);
 		expect(() => resolve('term:nope', 'x.mdx')).toThrow(/x\.mdx: unknown term "nope"/);
+	});
+	test('lab links and the catalog exist only in a course with labs', () => {
+		expect(() => resolve('lab:sim', 'x.mdx')).toThrow(/x\.mdx: unknown course link "lab:sim" \(known: none\)/);
+		expect(() => resolve('page:labs', 'x.mdx')).toThrow(/unknown course link "page:labs"/);
+		const labbed = checkCourse({ ...clone(course), labs: [{ slug: 'sim', title: 'Sim', summary: 's', lesson: 'a' }] });
+		const r = makeResolver(labbed, t, {}, '/base/', '/ru');
+		expect(r('lab:sim')).toBe('/base/ru/labs/sim/');
+		expect(r('lab:sim#step-2')).toBe('/base/ru/labs/sim/#step-2');
+		expect(r('page:labs')).toBe('/base/ru/labs/');
+		expect(() => r('lab:nope', 'x.mdx')).toThrow(/x\.mdx: unknown course link "lab:nope" \(known: sim\)/);
 	});
 });
 

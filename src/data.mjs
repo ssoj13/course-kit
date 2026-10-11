@@ -1,6 +1,7 @@
 /**
  * Course data: loading and validation of the two manifests every course provides.
- *   course.json - modules and lessons (order, slugs, titles): sidebar, numbering, URLs, progress ids.
+ *   course.json - modules and lessons (order, slugs, titles): sidebar, numbering, URLs, progress ids;
+ *                 optionally the labs (interactive simulations), each with its own page under `labs/`.
  *   terms.json  - the term graph: one node per concept, typed edges; every mind map, the glossary and
  *                 genealogy views are generated from it.
  * Plain ESM + JSDoc (not TS): it runs inside astro.config.mjs under Node, which refuses to strip types
@@ -10,7 +11,12 @@
 
 /** @typedef {{ slug: string, title: string, short?: string, summary: string }} LessonJson */
 /** @typedef {{ slug: string, title: string, summary: string, optional?: boolean, lessons: LessonJson[] }} ModuleJson */
-/** @typedef {{ id: string, title: string, description: string, modules: ModuleJson[] }} CourseJson */
+/**
+ * A lab: an interactive simulation with its own page (`labs/<slug>`), listed in the `/labs` catalog and in the
+ * sidebar. `lesson` is the slug of the lesson it belongs to; without it the lab previews later material.
+ * @typedef {{ slug: string, title: string, summary: string, lesson?: string }} LabJson
+ */
+/** @typedef {{ id: string, title: string, description: string, modules: ModuleJson[], labs?: LabJson[] }} CourseJson */
 
 /** @typedef {{ id: string, label: string }} LayerJson */
 /**
@@ -44,8 +50,8 @@
 export const EDGE_TYPES = /** @type {const} */ (['built-on', 'is-a', 'part-of', 'uses', 'related']);
 export const ACYCLIC_EDGE_TYPES = /** @type {const} */ (['built-on', 'is-a', 'part-of']);
 
-/** Top-level page names the engine owns; a module slug must not shadow them. */
-export const RESERVED_SLUGS = ['roadmap', 'glossary', '404', 'progress'];
+/** Top-level page names the engine owns; a module slug must not shadow them (`labs` holds the lab pages). */
+export const RESERVED_SLUGS = ['roadmap', 'glossary', '404', 'progress', 'labs'];
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -89,6 +95,18 @@ export function checkCourse(raw) {
 			if (!str(l?.summary)) errs.push(`${lat}: empty summary`);
 			if (l?.short !== undefined && !str(l.short)) errs.push(`${lat}: \`short\` must be non-empty when present`);
 		}
+	}
+	// Lab slugs are their own namespace (`lab:<slug>`, `labs/<slug>` pages), unique among labs.
+	if (c.labs !== undefined && !Array.isArray(c.labs)) errs.push('`labs` must be an array when present');
+	const labs = new Set();
+	for (const [i, l] of (Array.isArray(c.labs) ? c.labs : []).entries()) {
+		const at = `labs[${i}]${l?.slug ? ` "${l.slug}"` : ''}`;
+		if (!str(l?.slug) || !SLUG.test(l.slug)) errs.push(`${at}: bad slug`);
+		else if (labs.has(l.slug)) errs.push(`${at}: duplicate lab slug`);
+		labs.add(l?.slug);
+		if (!str(l?.title)) errs.push(`${at}: empty title`);
+		if (!str(l?.summary)) errs.push(`${at}: empty summary`);
+		if (l?.lesson !== undefined && !(typeof l.lesson === 'string' && lessons.has(l.lesson))) errs.push(`${at}: unknown lesson "${l.lesson}"`);
 	}
 	if (errs.length) throw new Error(`course.json is invalid:\n  - ${errs.join('\n  - ')}`);
 	return /** @type {CourseJson} */ (c);
@@ -162,7 +180,8 @@ export function checkTerms(raw, course) {
 /**
  * @typedef {{ title: string, short?: string, summary: string }} LessonText
  * @typedef {{ title: string, summary: string, lessons: Record<string, LessonText> }} ModuleText
- * @typedef {{ title: string, description: string, modules: Record<string, ModuleText> }} CourseOverlay
+ * @typedef {{ title: string, summary: string }} LabText
+ * @typedef {{ title: string, description: string, modules: Record<string, ModuleText>, labs?: Record<string, LabText> }} CourseOverlay
  * @typedef {{ label: string, def: string, aka?: string[] }} TermText
  * @typedef {{ layers: Record<string, string>, terms: Record<string, TermText>, edges?: Record<string, string> }} TermsOverlay
  */
@@ -212,8 +231,17 @@ export function localizeCourse(raw, course, locale) {
 			if (lt.short !== undefined && !str(lt.short)) errs.push(`modules.${m.slug}.lessons.${l.slug}: \`short\` must be non-empty when present`);
 		}
 	}
+	// A course without labs takes no `labs` in its overlays (an entry there would be an unknown key).
+	sameKeys(errs, 'labs', o.labs, (course.labs ?? []).map((l) => l.slug));
+	for (const l of course.labs ?? []) {
+		const lt = o.labs?.[l.slug];
+		if (!lt) continue;
+		if (!str(lt.title)) errs.push(`labs.${l.slug}: empty title`);
+		if (!str(lt.summary)) errs.push(`labs.${l.slug}: empty summary`);
+	}
 	if (errs.length) throw new Error(`course.${locale}.json is invalid:\n  - ${errs.join('\n  - ')}`);
 	const ov = /** @type {CourseOverlay} */ (o);
+	const labTexts = /** @type {Record<string, LabText>} */ (ov.labs);
 	return {
 		id: course.id,
 		title: ov.title,
@@ -233,6 +261,7 @@ export function localizeCourse(raw, course, locale) {
 				}),
 			};
 		}),
+		...(course.labs && { labs: course.labs.map((l) => ({ ...l, title: labTexts[l.slug].title, summary: labTexts[l.slug].summary })) }),
 	};
 }
 

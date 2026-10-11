@@ -23,7 +23,7 @@ export default defineCourse({ site, base, repo, course: new URL('./src/data/cour
 Components: `course-kit/components/{MindMap,Term,Quiz,CourseMap,ProgressExport,Snippet,CodeTabs}.astro`.
 Code in lessons comes from real files: `<Snippet src="examples/x.rs#region" />`, `<CodeTabs items={{ Rust: '...#r', 'C++': '...#r' }} />`;
 sources mark regions with `// #region name` ... `// #endregion` (any line-comment syntax; markers never shown).
-Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course pages>`, `term:<id>`.
+Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossary|home|labs|course pages>`, `term:<id>`.
 
 ## Layout
 
@@ -37,6 +37,8 @@ Links in Markdown: `lesson:<slug>[#a]`, `page:<roadmap|glossary|home|course page
   is kept separate from `virtual:course-kit/data` so local paths never reach a browser bundle).
 - `src/components/` — Astro components; `graph/GraphView.tsx` and `graph/RoadmapView.tsx` are React islands
   (@xyflow/react) rendered with `client:only="react"` plus a text fallback.
+- `src/components/lab/` — lab primitives (React): `useTimeline.ts`, `Scrubber.tsx`, `LabFrame.tsx`, `lab.css`.
+  `src/components/fullscreen.ts` — `useFullScreen()`, the one full-screen toggle of graph/Frame.tsx and LabFrame.
 - `src/pages/` — generated pages. `src/styles/lab.css` — widget design tokens/primitives.
 - `fixture/` — minimal course that builds the engine end to end (`bun run fixture:build`); not a package.
 - `tests/` — `bun test` for the pure modules.
@@ -80,6 +82,23 @@ Rules: `quizErrors(questions)` in lib/quiz.ts is the single rule set (Quiz.astro
 structure per question, and each length strategy ("pick the longest" / "pick the shortest", `lengthGuess`) may
 find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
 
+## Labs (v0.4.0)
+
+- Manifest: course.json `labs: [{ slug, title, summary, lesson? }]` (catalog order; `lesson` optional = previews
+  later material). Lab slugs are their own namespace; `labs` is a reserved module slug. Overlay `labs: { slug: {
+  title, summary } }`, complete when the course has labs, absent otherwise (data.mjs `checkCourse`/`localizeCourse`).
+- Pages: `content/docs/[<code>/]labs/<slug>.mdx` (checked by `checkLessonFiles`); `/labs` catalog injected per language
+  only when the course has labs (`pages/labs.astro`); sidebar group between modules and Reference ("All labs" reuses
+  the `module-overview-link` style); `lab:` links and `page:labs` exist only with labs (links.mjs).
+- Views: `CourseView.labs`, `labByPath`, `labHref`, `labsOf` (lib/course.ts; one `norm()` for lesson and lab paths).
+  Lesson box in the Footer override (next to LessonDone); lab eyebrow in the PageTitle override. Lab pages keep the
+  stock prev/next (sidebar order: All labs -> labs -> Glossary); only lessons are re-paginated.
+- Primitives: a lab is an array of precomputed frames; `lib/timeline.ts` holds the pure index rules (tested),
+  `useTimeline` binds them (one setTimeout per frame, manual moves pause, autoplay off under reduced motion).
+  Scrubber end buttons are `aria-disabled`, not `disabled`, so keyboard focus survives reaching an end.
+- Fixture: labs `counter` (lesson one, `fixture/src/components/CounterLab.tsx`) and `preview` (no lesson, exercises
+  the "Ahead in the course" group).
+
 ## TODO
 
 - [x] defineCourse, manifests + validation, links, generated pages, progress, quiz, term graph, MindMap, Roadmap
@@ -98,4 +117,8 @@ find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
       Frame "Reset layout"); edge labels live in the info panel, not on the canvas.
 - [x] Course-wide quiz lint: courses call `quizErrors` (vulkan_en scripts/lint-content.ts); longest AND shortest
       giveaways limited (v0.3.2)
+- [x] Labs as a first-class part (v0.4.0): manifest, pages, catalog, sidebar, `lab:` links, lesson box, eyebrow,
+      timeline primitives (useTimeline, Scrubber, LabFrame)
+- [ ] Labs: verify Scrubber/LabFrame interaction in a real browser (keyboard, play to the end, full screen); only the
+      SSR output was checked so far
 - [ ] Migration of vllm_en (progress keys were `vllm-course:` prefixed; its widgets) and math_en

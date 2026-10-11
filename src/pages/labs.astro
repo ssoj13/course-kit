@@ -1,0 +1,94 @@
+---
+/**
+ * Lab catalog (`/labs/`, `/<lang>/labs/`), injected only for a course with labs: every lab of course.json `labs` in
+ * the page's language, grouped by the module of its lesson in course order; labs that belong to no lesson (previews of
+ * later material) form the last group. Within a group labs keep catalog order.
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { courseIn, langOf, type Lab } from '../lib/course';
+
+const v = courseIn(langOf(Astro.url.pathname));
+const groups: { title: string; href?: string; labs: Lab[] }[] = [
+	...v.modules.map((m) => ({
+		title: v.tf('moduleTitle', { n: m.num, title: m.title }) + (m.optional ? ` ${v.t.optional}` : ''),
+		href: v.moduleHref(m.slug),
+		labs: v.labs.filter((l) => l.lesson?.moduleSlug === m.slug),
+	})),
+	{ title: v.t.labsAhead, labs: v.labs.filter((l) => !l.lesson) },
+].filter((g) => g.labs.length > 0);
+---
+
+<StarlightPage frontmatter={{ title: v.t.labs, description: v.tf('labsDescription', { course: v.title }), editUrl: false }}>
+	<p>{v.t.labsIntro}</p>
+	{
+		groups.map((g) => (
+			<>
+				<h2>{g.href ? <a href={g.href}>{g.title}</a> : g.title}</h2>
+				<ul class="ck-labs not-content">
+					{g.labs.map((l) => (
+						<li class="ck-lab-card">
+							<a class="ck-lab-card-title" href={v.labHref(l.slug)}>
+								{l.title}
+							</a>
+							<p>{l.summary}</p>
+							{l.lesson && (
+								<a class="ck-lab-card-lesson" href={v.href(l.lesson.slug)}>
+									{v.tf('lessonLink', { n: l.lesson.num, title: l.lesson.title })}
+								</a>
+							)}
+						</li>
+					))}
+				</ul>
+			</>
+		))
+	}
+</StarlightPage>
+
+<style>
+	h2 a {
+		color: inherit;
+		text-decoration: none;
+	}
+	h2 a:hover {
+		text-decoration: underline;
+	}
+	.ck-labs {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+		gap: var(--lab-gap);
+		list-style: none;
+		margin: 1rem 0 0;
+		padding: 0;
+	}
+	.ck-lab-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		margin: 0;
+		padding: 0.85rem 1rem;
+		border: 1px solid var(--lab-border);
+		border-radius: var(--lab-radius);
+		background: var(--lab-surface);
+	}
+	.ck-lab-card:hover {
+		border-color: var(--lab-accent);
+	}
+	.ck-lab-card-title {
+		font-weight: 600;
+		color: var(--sl-color-white);
+		text-decoration: none;
+	}
+	.ck-lab-card-title:hover {
+		text-decoration: underline;
+	}
+	.ck-lab-card p {
+		flex: 1;
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.ck-lab-card-lesson {
+		font-size: var(--sl-text-xs);
+		color: var(--lab-accent-high);
+	}
+</style>

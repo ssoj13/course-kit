@@ -1,13 +1,16 @@
 ---
 /**
- * Starlight PageTitle override: the stock <h1> plus, on lesson pages, a "Lesson N · Module M — Title" eyebrow
- * derived from course.json in the page's language (frontmatter titles carry no numbers).
+ * Starlight PageTitle override: the stock <h1> plus an eyebrow derived from course.json in the page's language
+ * (frontmatter titles carry no numbers): "Lesson N · Module M — Title" on lesson pages, "Lab · Lesson N — Title" on
+ * lab pages ("Lab" links to the catalog; the lesson part only for a lab that belongs to a lesson).
  */
 import Default from '@astrojs/starlight/components/PageTitle.astro';
 import { courseIn, langOf } from '../../lib/course';
 
 const v = courseIn(langOf(Astro.url.pathname));
-const lesson = v.lessonByPath(Astro.locals.starlightRoute.id);
+const id = Astro.locals.starlightRoute.id;
+const lesson = v.lessonByPath(id);
+const lab = lesson ? undefined : v.labByPath(id);
 ---
 
 {
@@ -18,6 +21,19 @@ const lesson = v.lessonByPath(Astro.locals.starlightRoute.id);
 				{v.tf('eyebrowModule', { n: lesson.moduleNum, title: lesson.moduleTitle })}
 				{lesson.optional && ` ${v.t.optional}`}
 			</a>
+		</p>
+	)
+}
+{
+	lab && (
+		<p class="lesson-eyebrow">
+			<a href={v.pageHref('labs')}>{v.t.eyebrowLab}</a>
+			{lab.lesson && (
+				<>
+					{' · '}
+					<a href={v.href(lab.lesson.slug)}>{v.tf('eyebrowLabLesson', { n: lab.lesson.num, title: lab.lesson.title })}</a>
+				</>
+			)}
 		</p>
 	)
 }

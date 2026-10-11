@@ -1,14 +1,44 @@
 ---
 /**
- * Starlight Footer override: on lesson pages renders the completion toggle above the stock footer, so lesson
- * files need no per-lesson chrome. Prev/next links come from the route middleware (course order, page language).
+ * Starlight Footer override: on lesson pages renders the lesson's labs (course.json `labs` with this `lesson`) and the
+ * completion toggle above the stock footer, so lesson files need no per-lesson chrome. Prev/next links come from the
+ * route middleware (course order, page language).
  */
 import Default from '@astrojs/starlight/components/Footer.astro';
 import LessonDone from '../LessonDone.astro';
 import { courseIn, langOf } from '../../lib/course';
 
-const lesson = courseIn(langOf(Astro.url.pathname)).lessonByPath(Astro.locals.starlightRoute.id);
+const v = courseIn(langOf(Astro.url.pathname));
+const lesson = v.lessonByPath(Astro.locals.starlightRoute.id);
+const labs = lesson ? v.labsOf(lesson.slug) : [];
 ---
 
+{
+	labs.length > 0 && (
+		<nav class="lesson-labs lab-card not-content" aria-label={v.t.lessonLabs}>
+			<p class="lab-eyebrow">{v.t.lessonLabs}</p>
+			<ul>
+				{labs.map((l) => (
+					<li>
+						<a href={v.labHref(l.slug)}>{l.title}</a> <span class="lab-muted">— {l.summary}</span>
+					</li>
+				))}
+			</ul>
+		</nav>
+	)
+}
 {lesson && <LessonDone lesson={lesson.slug} />}
 <Default><slot /></Default>
+
+<style>
+	.lesson-labs {
+		margin-top: 2rem;
+	}
+	.lesson-labs ul {
+		list-style: none;
+		padding: 0;
+	}
+	.lesson-labs a {
+		font-weight: 600;
+	}
+</style>

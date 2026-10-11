@@ -104,6 +104,24 @@ const EN = {
 	wirePartOf: 'contains',
 	wireUses: 'is used by',
 	wireRelated: 'is related to',
+	// Labs: sidebar group, catalog page, lesson box, lab page eyebrow
+	labs: 'Labs',
+	allLabs: 'All labs',
+	labsDescription: 'Interactive simulations of {course}.',
+	labsIntro: 'Simulations to work with by hand: step through them, scrub back and forth, change the inputs. Each lab is listed under the module of its lesson.',
+	labsAhead: 'Ahead in the course',
+	lessonLabs: 'Labs for this lesson',
+	eyebrowLab: 'Lab',
+	eyebrowLabLesson: 'Lesson {n} — {title}',
+	// Timeline controls (lab Scrubber)
+	scrubControls: 'Timeline controls',
+	scrubReset: 'Back to the start',
+	scrubBack: 'Step back',
+	scrubPlay: 'Play',
+	scrubPause: 'Pause',
+	scrubForward: 'Step forward',
+	scrubSlider: 'Timeline position',
+	scrubStep: 'Step {i} of {n}',
 };
 
 /** @type {UiText} */
@@ -192,6 +210,22 @@ const RU = {
 	wirePartOf: 'часть',
 	wireUses: 'использование',
 	wireRelated: 'связь',
+	labs: 'Интерактивы',
+	allLabs: 'Все интерактивы',
+	labsDescription: 'Интерактивные модели курса «{course}».',
+	labsIntro: 'Модели, с которыми можно поработать руками: проходите их по шагам, перематывайте вперёд и назад, меняйте входные данные. Каждый интерактив стоит в разделе модуля, к уроку которого он относится.',
+	labsAhead: 'Дальше в курсе',
+	lessonLabs: 'Интерактивы к уроку',
+	eyebrowLab: 'Интерактив',
+	eyebrowLabLesson: 'Урок {n} — {title}',
+	scrubControls: 'Управление воспроизведением',
+	scrubReset: 'Сначала',
+	scrubBack: 'Шаг назад',
+	scrubPlay: 'Воспроизвести',
+	scrubPause: 'Пауза',
+	scrubForward: 'Шаг вперёд',
+	scrubSlider: 'Положение на шкале',
+	scrubStep: 'Шаг {i} из {n}',
 };
 
 /** Interface texts per language code. */

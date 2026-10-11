@@ -50,6 +50,15 @@ describe('translation overlays', () => {
 		delete badT.edges[edgeKey({ from: 'x', type: 'built-on', to: 'y' })];
 		expect(() => localizeTerms(badT, terms, 'ru')).toThrow(/edges: missing "x\|built-on\|y"/);
 	});
+	test('lab texts: complete when the course has labs, absent when it has none', () => {
+		const labbed = checkCourse({ ...structuredClone(course), labs: [{ slug: 'sim', title: 'Sim', summary: 's', lesson: 'a' }] });
+		const ok = { ...structuredClone(courseRu), labs: { sim: { title: 'Модель', summary: 'м' } } };
+		expect(localizeCourse(ok, labbed, 'ru').labs).toEqual([{ slug: 'sim', title: 'Модель', summary: 'м', lesson: 'a' }]);
+		expect(() => localizeCourse(structuredClone(courseRu), labbed, 'ru')).toThrow(/labs: missing "sim"/);
+		expect(() => localizeCourse({ ...ok, labs: { sim: { title: '', summary: 'м' } } }, labbed, 'ru')).toThrow(/labs\.sim: empty title/);
+		expect(() => localizeCourse(ok, course, 'ru')).toThrow(/labs: unknown "sim"/);
+		expect(localizeCourse(structuredClone(courseRu), course, 'ru').labs).toBeUndefined();
+	});
 });
 
 describe('language of a docs file and its links', () => {

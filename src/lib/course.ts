@@ -8,7 +8,7 @@
  * `courseIn(lang)`.
  */
 import { courses, languages, site, terms } from 'virtual:course-kit/data';
-import type { LessonJson, ModuleJson } from '../data.mjs';
+import type { LabJson, LessonJson, ModuleJson } from '../data.mjs';
 import { makeResolver } from '../links.mjs';
 import { fmt, ui, type UiText } from '../i18n.mjs';
 
@@ -31,6 +31,13 @@ export interface Module extends Omit<ModuleJson, 'lessons' | 'optional'> {
 	num: number;
 	optional: boolean;
 	lessons: Lesson[];
+}
+
+export interface Lab extends Omit<LabJson, 'lesson'> {
+	/** The lesson the lab belongs to; none for a lab that previews later material. */
+	lesson?: Lesson;
+	/** Content id / URL path without base and language: `labs/<slug>`. */
+	path: string;
 }
 
 export interface Language {
@@ -82,7 +89,15 @@ export interface CourseView {
 	moduleHref(slug: string): string;
 	/** Previous / next lesson in course order (crosses module boundaries). */
 	adjacent(slug: string): { prev?: Lesson; next?: Lesson };
-	/** Resolves `lesson:` / `page:` / `term:` URLs like the Markdown plugin does; null for other URLs. */
+	/** Labs in catalog order (course.json `labs`); empty when the course has none. */
+	labs: readonly Lab[];
+	/** Like `lessonByPath`, for lab pages (`labs/<slug>`). */
+	labByPath(path: string): Lab | undefined;
+	/** Absolute URL of a lab page in this language; throws on an unknown slug. */
+	labHref(slug: string, hash?: string): string;
+	/** Labs that belong to a lesson, in catalog order. */
+	labsOf(lessonSlug: string): readonly Lab[];
+	/** Resolves `lesson:` / `lab:` / `page:` / `term:` URLs like the Markdown plugin does; null for other URLs. */
 	resolveLink(url: string, where?: string): string | null;
 	/** `fmt(t[key], vars)` */
 	tf(key: keyof UiText, vars: Record<string, string | number>): string;
@@ -112,7 +127,23 @@ function makeView(lang: Language): CourseView {
 	const lessons = modules.flatMap((m) => m.lessons);
 	const bySlug = new Map(lessons.map((l) => [l.slug, l]));
 	const byPath = new Map(lessons.map((l) => [l.path, l]));
+	const labs: Lab[] = (c.labs ?? []).map((l) => ({
+		slug: l.slug,
+		title: l.title,
+		summary: l.summary,
+		lesson: l.lesson ? bySlug.get(l.lesson) : undefined,
+		path: `labs/${l.slug}`,
+	}));
+	const labByPath = new Map(labs.map((l) => [l.path, l]));
 	const root = () => `${base()}${lang.prefix}`;
+	/** Content id or URL path -> `<module>/<lesson>` / `labs/<lab>`: base, language, slashes, `.mdx`, `/index` dropped. */
+	const norm = (path: string): string => {
+		let p = path.replace(/\.mdx?$/, '').replace(/^\/+|\/+$/g, '');
+		const b = base().replace(/^\//, '');
+		if (b && p.startsWith(`${b}/`)) p = p.slice(b.length + 1);
+		if (lang.prefix && p.startsWith(`${lang.code}/`)) p = p.slice(lang.code.length + 1);
+		return p.replace(/\/index$/, '');
+	};
 	const resolver = makeResolver(c, terms[lang.code]!, site.pages, import.meta.env.BASE_URL, lang.prefix);
 	return {
 		lang: lang.code,
@@ -123,13 +154,7 @@ function makeView(lang: Language): CourseView {
 		modules,
 		lessons,
 		lessonBySlug: (slug) => bySlug.get(slug),
-		lessonByPath(path) {
-			let p = path.replace(/\.mdx?$/, '').replace(/^\/+|\/+$/g, '');
-			const b = base().replace(/^\//, '');
-			if (b && p.startsWith(`${b}/`)) p = p.slice(b.length + 1);
-			if (lang.prefix && p.startsWith(`${lang.code}/`)) p = p.slice(lang.code.length + 1);
-			return byPath.get(p.replace(/\/index$/, ''));
-		},
+		lessonByPath: (path) => byPath.get(norm(path)),
 		href(slug, hash) {
 			const l = bySlug.get(slug);
 			if (!l) throw new Error(`course.json has no lesson "${slug}"`);
@@ -144,6 +169,13 @@ function makeView(lang: Language): CourseView {
 			const i = lessons.findIndex((l) => l.slug === slug);
 			return i < 0 ? {} : { prev: lessons[i - 1], next: lessons[i + 1] };
 		},
+		labs,
+		labByPath: (path) => labByPath.get(norm(path)),
+		labHref(slug, hash) {
+			if (!labs.some((l) => l.slug === slug)) throw new Error(`course.json has no lab "${slug}"`);
+			return `${root()}/labs/${slug}/${hash ? `#${hash}` : ''}`;
+		},
+		labsOf: (lessonSlug) => labs.filter((l) => l.lesson?.slug === lessonSlug),
 		resolveLink: (url, where) => resolver(url, where),
 		tf: (key, vars) => fmt(t[key], vars),
 	};
