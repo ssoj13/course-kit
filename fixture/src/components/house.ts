@@ -69,7 +69,7 @@ export function houseScenario(lang: string): Scenario<House> {
 			id: 'build',
 			label: t.build,
 			primary: true,
-			options: [{ id: 'paint', label: t.paint, initial: false }],
+			options: [{ kind: 'flag', id: 'paint', label: t.paint, initial: false }],
 			check: (s) => buildCheck(s, id),
 			apply: (s, o) => ({
 				state: { ...s, built: [...s.built, id], painted: o.paint ? [...s.painted, id] : s.painted },
@@ -94,6 +94,7 @@ export function houseScenario(lang: string): Scenario<House> {
 	];
 	return {
 		id: 'house',
+		version: '1',
 		init: { built: [], hanging: [], painted: [] },
 		items: HOUSE_PARTS,
 		verbs,

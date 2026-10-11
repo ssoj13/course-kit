@@ -4,15 +4,18 @@
  * Loaded globally before lab.css and the course's own `customCss` (index.mjs), so the details window, which lives in
  * a portal outside the widget, sees them too.
  *
- * A site theme overrides this block in its own customCss. Surfaces and ink are derived from Starlight's variables, so
- * they follow the light/dark switch by themselves; the group palette has explicit light values, so a theme that
- * changes it overrides BOTH `:root` and `:root[data-theme='light']` (same selectors, loaded later = wins).
+ * A site theme overrides tokens in its own customCss (loaded after this file). Surfaces and ink are derived from
+ * Starlight's variables, so they follow the light/dark switch by themselves. The light-only values below sit under
+ * `:root:where([data-theme='light'])`, which has the specificity of a plain `:root`: ONE later `:root { }` block of a
+ * theme overrides a token in both themes; a theme that wants different light values adds its own light block.
  *
  * Tokens (see AGENTS.md "Theming"):
  *   surfaces   --ck-frame (map frame), --ck-card (cards, console), --ck-window (details window), --ck-line (borders)
  *   ink        --ck-ink (body text), --ck-ink-2 (secondary text), --ck-ink-muted (captions, hints), --ck-link
  *   graphics   --ck-wire (connectors), --ck-accent (focus, selection, spine), --ck-shadow, --ck-shadow-sm,
- *              --ck-primary / --ck-on-primary (filled button and its text)
+ *              --ck-primary / --ck-on-primary (filled button and its text), --ck-on-fill (text and marks drawn on a
+ *              solid group or feedback color: those are light in dark and dark in light, so this ink flips)
+ *   type       --ck-mono (code font: Starlight's public --sl-font-mono, else its system mono stack)
  *   feedback   --ck-ok, --ck-warn, --ck-err (console lines, state texts, flashes)
  *   card state --ck-selected, --ck-muted-bg, --ck-muted-ink, --ck-locked-bg, --ck-locked-ink, --ck-error,
  *              --ck-head-tint / --ck-done-tint (share of the group color mixed into a spine node / a done card)
@@ -34,6 +37,9 @@
 	/* Filled buttons: dark text on the light accent in the dark theme (the mid accent gives 3.9:1), see the light block. */
 	--ck-primary: var(--sl-color-accent-high);
 	--ck-on-primary: var(--sl-color-black);
+	/* Starlight's "black" is the page background of either theme: near-black in dark, white in light. */
+	--ck-on-fill: var(--sl-color-black);
+	--ck-mono: var(--sl-font-mono, var(--sl-font-system-mono));
 	--ck-shadow: 0 18px 48px -12px rgb(0 0 0 / 0.55);
 	--ck-shadow-sm: 0 10px 24px -14px rgb(0 0 0 / 0.9);
 	--ck-ok: var(--sl-color-green);
@@ -63,7 +69,8 @@
 	--ck-group-11: #f39a5b;
 	--ck-group-12: #8fd16a;
 }
-:root[data-theme='light'] {
+/* Same specificity as `:root` (see the header): a theme's single `:root` block, loaded later, wins in both themes. */
+:root:where([data-theme='light']) {
 	--ck-shadow-sm: 0 8px 18px -12px rgb(20 30 50 / 0.35);
 	--ck-primary: var(--sl-color-accent);
 	/* Starlight's plain light-theme green/orange/red are pastel (1.8:1 on white); the -high shades read as text. */

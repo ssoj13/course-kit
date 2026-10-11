@@ -77,6 +77,8 @@ export interface TreeViewProps {
 	prefer?: TreeMode;
 	/** Extra classes on a card (state of a course widget: `is-alive`, ...). */
 	cardClass?: (item: TreeItem) => string;
+	/** Small text at the end of a card (a course widget's state in words, so it is never told by color alone). */
+	cardNote?: (item: TreeItem) => ReactNode;
 	/** Replaces the details body (definition, facts, link). */
 	renderDetails?: (item: TreeItem) => ReactNode;
 	/** Rendered under the map, inside the frame (a course widget's console). */
@@ -97,7 +99,7 @@ const breakable = (s: string) => s.split(/(?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z])/).f
 
 const isMode = (m: unknown): m is TreeMode => MODES.includes(m as TreeMode);
 
-export default function TreeView({ lang, items, groups, label, reveal, hint, prefer = DEFAULT_MODE, cardClass, renderDetails, children }: TreeViewProps) {
+export default function TreeView({ lang, items, groups, label, reveal, hint, prefer = DEFAULT_MODE, cardClass, cardNote, renderDetails, children }: TreeViewProps) {
 	const t = ui(lang);
 	const groupOf = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
 	const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
@@ -132,16 +134,19 @@ export default function TreeView({ lang, items, groups, label, reveal, hint, pre
 	const [sel, setSel] = useState<string | null>(null);
 	const dlgId = useId();
 	const cards = useRef(new Map<string, HTMLElement>());
+	/** Focus goes back to the card the window describes or, when that card is hidden now (a collapsed branch, another
+	 *  view), to its nearest visible ancestor. */
 	const close = useCallback(() => {
-		if (sel) cards.current.get(sel)?.focus({ preventScroll: true });
+		const shown = (el?: HTMLElement): el is HTMLElement => !!el && el.isConnected && !el.closest('[inert]') && el.getClientRects().length > 0;
+		for (let id: string | null | undefined = sel; id; id = forest.parent.get(id)) {
+			const el = cards.current.get(id);
+			if (shown(el)) {
+				el.focus({ preventScroll: true });
+				break;
+			}
+		}
 		setSel(null);
-	}, [sel]);
-	useEffect(() => {
-		if (!sel) return;
-		const onKey = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && close();
-		document.addEventListener('keydown', onKey);
-		return () => document.removeEventListener('keydown', onKey);
-	}, [sel, close]);
+	}, [sel, forest]);
 	// Card sizes for the graphic layouts: measured after every render (cheap offset reads; a state bump only when
 	// something changed) and on resize (web fonts arriving). Connector labels are measured too: they set column gaps.
 	const measured = useRef(new Map<string, HTMLElement>());
@@ -202,22 +207,26 @@ export default function TreeView({ lang, items, groups, label, reveal, hint, pre
 	};
 
 	/** The card: a button that opens the details window. The same element in every view, so course state classes apply. */
-	const card = (it: TreeItem, also: string, measure: boolean, extra = '') => (
-		<button
-			type="button"
-			ref={measure ? ref(`n:${it.id}`, it.id) : ref(`c:${mode}:${it.id}`, it.id)}
-			className={`ck-tc${it.muted ? ' is-muted' : ''}${sel === it.id ? ' is-selected' : ''} ${extra} ${cardClass?.(it) ?? ''}`}
-			style={color(it)}
-			aria-haspopup="dialog"
-			aria-expanded={sel === it.id}
-			aria-controls={sel === it.id ? dlgId : undefined}
-			onClick={() => setSel(sel === it.id ? null : it.id)}
-		>
-			<span className={`ck-tc-label${it.code ? ' is-code' : ''}`}>{it.code ? breakable(it.label) : it.label}</span>
-			{it.sub && <span className="ck-tc-sub">{it.sub}</span>}
-			{also && <span className="ck-tc-also">{also}</span>}
-		</button>
-	);
+	const card = (it: TreeItem, also: string, measure: boolean, extra = '') => {
+		const note = cardNote?.(it);
+		return (
+			<button
+				type="button"
+				ref={measure ? ref(`n:${it.id}`, it.id) : ref(`c:${mode}:${it.id}`, it.id)}
+				className={`ck-tc${it.muted ? ' is-muted' : ''}${sel === it.id ? ' is-selected' : ''} ${extra} ${cardClass?.(it) ?? ''}`}
+				style={color(it)}
+				aria-haspopup="dialog"
+				aria-expanded={sel === it.id}
+				aria-controls={sel === it.id ? dlgId : undefined}
+				onClick={() => setSel(sel === it.id ? null : it.id)}
+			>
+				<span className={`ck-tc-label${it.code ? ' is-code' : ''}`}>{it.code ? breakable(it.label) : it.label}</span>
+				{it.sub && <span className="ck-tc-sub">{it.sub}</span>}
+				{also && <span className="ck-tc-also">{also}</span>}
+				{note != null && note !== false && <span className="ck-tc-note">{note}</span>}
+			</button>
+		);
+	};
 	const tog = (it: TreeItem, extraClass = '') => {
 		const isOpen = effOpen.has(it.id);
 		const n = forest.kids.get(it.id)!.length;
@@ -381,7 +390,19 @@ export default function TreeView({ lang, items, groups, label, reveal, hint, pre
 	const used = groups.filter((g) => items.some((i) => i.group === g.id));
 
 	return (
-		<div className="ck-tree" role="group" aria-label={label}>
+		// Escape closes this tree's window from anywhere inside the tree (the window handles its own Escape and stops it);
+		// other trees on the page keep theirs.
+		<div
+			className="ck-tree"
+			role="group"
+			aria-label={label}
+			onKeyDown={(e) => {
+				if (e.key === 'Escape' && sel) {
+					e.preventDefault();
+					close();
+				}
+			}}
+		>
 			<div className="ck-tree-bar">
 				<div className="ck-seg" role="group" aria-label={t.treeView}>
 					{MODES.map((m) => (

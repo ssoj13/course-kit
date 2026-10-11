@@ -1,6 +1,6 @@
 {
   "name": "course-kit",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Engine for interactive Starlight textbooks: course manifest, progress, quizzes, term graph and mind maps.",
   "type": "module",
   "keywords": ["astro-component", "withastro", "starlight"],

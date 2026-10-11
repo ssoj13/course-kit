@@ -11,6 +11,8 @@ export default defineCourse({
 	repo: 'https://github.com/ssoj13/course-kit',
 	course: new URL('./src/data/course.json', import.meta.url),
 	terms: new URL('./src/data/terms.json', import.meta.url),
+	// A site theme overriding the engine's tokens (scoped to the high-contrast page by its marker).
+	customCss: ['./src/styles/high-contrast.css'],
 	languages: [
 		{ code: 'en', label: 'English' },
 		{ code: 'ru', label: 'Русский' },

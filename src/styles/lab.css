@@ -16,11 +16,12 @@
 	--lab-ok: var(--ck-ok);
 	--lab-warn: var(--ck-warn);
 	--lab-err: var(--ck-err);
-	/* Chart series: weights, KV cache, overhead, free/headroom. */
-	--lab-series-1: #4f8ff7;
-	--lab-series-2: #e5a33b;
-	--lab-series-3: #9c6ade;
-	--lab-series-4: #3fb27f;
+	/* Chart series (blue, amber, purple, green): palette entries, so they get light-theme values and follow site
+	   themes; text on a series fill uses --ck-on-fill. */
+	--lab-series-1: var(--ck-group-8);
+	--lab-series-2: var(--ck-group-3);
+	--lab-series-3: var(--ck-group-5);
+	--lab-series-4: var(--ck-group-2);
 }
 
 /*
@@ -75,19 +76,19 @@
 }
 :where(.lab-card) :where(h4) {
 	font-size: var(--sl-text-sm);
-	color: var(--sl-color-white);
+	color: var(--ck-ink);
 	margin-top: 0.8rem;
 }
 :where(.lab-card) :where(summary) {
 	cursor: pointer;
 }
 :where(.lab-card) :where(a:not(.lab-button)) {
-	color: var(--sl-color-text-accent);
+	color: var(--ck-link);
 	text-decoration: underline;
 	text-underline-offset: 0.15em;
 }
 :where(.lab-card) :where(code) {
-	font-family: var(--__sl-font-mono);
+	font-family: var(--ck-mono);
 	font-size: 0.9em;
 	background: var(--lab-surface-2);
 	border: 1px solid var(--lab-border);
@@ -101,7 +102,7 @@
 	gap: 0.5rem;
 	font-weight: 600;
 	font-size: var(--sl-text-lg);
-	color: var(--sl-color-white);
+	color: var(--ck-ink);
 	margin: 0 0 0.25rem;
 }
 .lab-eyebrow {
@@ -133,7 +134,7 @@
 	border: 1px solid var(--lab-border);
 	border-radius: 0.45rem;
 	background: var(--lab-surface-2);
-	color: var(--sl-color-white);
+	color: var(--ck-ink);
 	font: inherit;
 	font-size: var(--sl-text-sm);
 	padding: 0.45rem 0.9rem;
@@ -175,7 +176,7 @@
 .lab-card input[type='password'] {
 	font: inherit;
 	font-size: var(--sl-text-sm);
-	color: var(--sl-color-white);
+	color: var(--ck-ink);
 	background: var(--lab-surface-2);
 	border: 1px solid var(--lab-border);
 	border-radius: 0.4rem;
@@ -184,7 +185,7 @@
 	box-sizing: border-box;
 }
 .lab-card textarea {
-	font-family: var(--__sl-font-mono);
+	font-family: var(--ck-mono);
 	resize: vertical;
 }
 .lab-card input[type='range'] {
@@ -194,7 +195,7 @@
 
 /* Read-only result panes (logs, streamed output). */
 .lab-output {
-	font-family: var(--__sl-font-mono);
+	font-family: var(--ck-mono);
 	font-size: var(--sl-text-xs);
 	white-space: pre-wrap;
 	word-break: break-word;
@@ -224,7 +225,7 @@
 	display: block;
 	font-size: var(--sl-text-xl);
 	font-variant-numeric: tabular-nums;
-	color: var(--sl-color-white);
+	color: var(--ck-ink);
 }
 .lab-stat span {
 	font-size: var(--sl-text-xs);
@@ -259,7 +260,8 @@
 /* Sidebar: the per-module overview entry and "All labs" (index.mjs) read as navigation, not as a lesson or a lab. */
 .sidebar-content a.module-overview-link {
 	font-style: italic;
-	color: var(--sl-color-gray-3);
+	/* gray-3 is 4.47:1 on the sidebar; the muted ink token passes AA. */
+	color: var(--ck-ink-muted);
 }
 .sidebar-content a.module-overview-link[aria-current='page'] {
 	color: var(--sl-color-text-invert);

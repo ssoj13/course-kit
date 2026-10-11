@@ -170,6 +170,18 @@ declare namespace EN {
     let trainerReady: string;
     let trainerDone: string;
     let trainerError: string;
+    let trainerTagLocked: string;
+    let trainerTagReady: string;
+    let trainerTagDone: string;
+    let trainerTagError: string;
+    let trainerActions: string;
+    let trainerNone: string;
+    let trainerUndone: string;
+    let trainerRestarted: string;
+    let trainerRestore: string;
+    let trainerRestored: string;
+    let trainerStale: string;
+    let trainerStalePart: string;
 }
 /** @type {UiText} */
 declare const RU: UiText;

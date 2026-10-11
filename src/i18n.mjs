@@ -153,6 +153,18 @@ const EN = {
 	trainerReady: 'Can be done now.',
 	trainerDone: 'Done.',
 	trainerError: 'Broken: something it depends on is gone.',
+	trainerTagLocked: 'not yet',
+	trainerTagReady: 'ready',
+	trainerTagDone: 'done',
+	trainerTagError: 'broken',
+	trainerActions: 'Actions',
+	trainerNone: '(none)',
+	trainerUndone: 'Last step undone.',
+	trainerRestarted: 'Started over. "Restore" brings the previous run back.',
+	trainerRestore: 'Restore',
+	trainerRestored: 'Previous run restored.',
+	trainerStale: 'Your saved run belongs to an earlier version of this exercise, so it starts fresh.',
+	trainerStalePart: 'Part of your saved run no longer fits this exercise: kept the first {n} of {total} steps.',
 };
 
 /** @type {UiText} */
@@ -286,6 +298,18 @@ const RU = {
 	trainerReady: 'Можно сделать прямо сейчас.',
 	trainerDone: 'Готово.',
 	trainerError: 'Сломано: то, от чего оно зависит, уже уничтожено.',
+	trainerTagLocked: 'пока нельзя',
+	trainerTagReady: 'можно',
+	trainerTagDone: 'готово',
+	trainerTagError: 'сломано',
+	trainerActions: 'Действия',
+	trainerNone: '(нет)',
+	trainerUndone: 'Последний шаг отменён.',
+	trainerRestarted: 'Начато заново. Кнопка «Вернуть» восстановит прежний прогон.',
+	trainerRestore: 'Вернуть',
+	trainerRestored: 'Прежний прогон восстановлен.',
+	trainerStale: 'Сохранённый прогон относится к прежней версии этого упражнения, поэтому оно начинается заново.',
+	trainerStalePart: 'Часть сохранённого прогона больше не подходит к упражнению: оставлены первые {n} из {total} шагов.',
 };
 
 /** Interface texts per language code. */
