@@ -1,6 +1,6 @@
 {
   "name": "course-kit",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Engine for interactive Starlight textbooks: course manifest, progress, quizzes, term graph and mind maps.",
   "type": "module",
   "keywords": ["astro-component", "withastro", "starlight"],
@@ -17,6 +17,7 @@
   "files": ["src"],
   "scripts": {
     "test": "bun test tests",
+    "types": "bun scripts/types.ts",
     "fixture:build": "astro build --root fixture",
     "fixture:dev": "astro dev --root fixture",
     "check": "astro-check --root ."

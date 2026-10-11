@@ -47,6 +47,11 @@ Links in Markdown: `lesson:<slug>[#a]`, `lab:<slug>[#a]`, `page:<roadmap|glossar
 
 - Config-side files are plain `.mjs` + JSDoc, never TS: astro.config is loaded by Node in CI, and Node refuses to
   strip types from files under node_modules. Locally `node` is Bun's wrapper, so this would not show up locally.
+- Types of those `.mjs` modules for TypeScript courses: generated `src/<name>.d.mts` siblings (`bun run types` =
+  scripts/types.ts over tsconfig.types.json; tests/types.test.ts fails when they are stale). TS picks a sibling
+  `.d.mts` by itself (package imports and the components' relative `../i18n.mjs` alike), so exports need no `types`
+  conditions. tsconfig.json excludes `src/*.d.mts`: if they were included, TS would drop the `.mjs` twins from the
+  program and stop checking them. Emit goes through a temp dir: tsc refuses to overwrite its own inputs (TS5055).
 - Engine files are referenced by absolute paths (`own()` in index.mjs), not `course-kit/...` specifiers, so they
   resolve the same in a git install, a copy, or the fixture.
 - The fixture has no package.json: it runs on this repo's devDependencies (one copy of astro/react).
@@ -117,6 +122,7 @@ find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
       Frame "Reset layout"); edge labels live in the info panel, not on the canvas.
 - [x] Course-wide quiz lint: courses call `quizErrors` (vulkan_en scripts/lint-content.ts); longest AND shortest
       giveaways limited (v0.3.2)
+- [x] Declarations for the `.mjs` modules (v0.4.1): courses type-check `course-kit` and `course-kit/i18n.mjs`
 - [x] Labs as a first-class part (v0.4.0): manifest, pages, catalog, sidebar, `lab:` links, lesson box, eyebrow,
       timeline primitives (useTimeline, Scrubber, LabFrame)
 - [ ] Labs: verify Scrubber/LabFrame interaction in a real browser (keyboard, play to the end, full screen); only the
