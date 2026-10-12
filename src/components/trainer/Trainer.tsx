@@ -8,12 +8,12 @@
  *             fieldset with its inputs per verb that has options), the result of the last action taken on this item;
  *   console   under the map: global actions, progress, goals, completion message, Undo / Start over / Restore,
  *             every line printed so far (the one live region for results; Undo/Start over/Restore are announced by
- *             a separate polite status).
+ *             a separate polite status), scrolled to the newest line unless the reader scrolled up.
  * The run (the reader's actions) is stored per page and exercise (lib/store.ts `trainerKey`) with the scenario's
  * version, replayed on load, and written only after the reader acted. Scenarios hold functions, so a trainer is
  * rendered from a course island (React), not from an .astro file.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import TreeView, { type TreeGroup, type TreeItem, type TreeMode } from '../graph/TreeView';
 import './trainer.css';
 import {
@@ -68,7 +68,7 @@ export interface TrainerProps<S> {
 	statusTag?: (status: Status, item: TreeItem) => string;
 	/** Progress line over the console (default: "Done n/total · errors: e"). */
 	progressText?: (c: Counts, state: S) => string;
-	/** Newest console lines kept on screen. */
+	/** Newest console lines kept in the console (it scrolls to the newest one by itself). */
 	lines?: number;
 }
 
@@ -86,6 +86,32 @@ function Lines({ log }: { log: readonly Entry[] }) {
 			))}
 		</ol>
 	);
+}
+
+/**
+ * Keeps a scrolling list on its newest line whenever `log` changes, unless the reader scrolled up to read back: then it
+ * stays where the reader left it until they scroll to the bottom again. Smooth, or instant for prefers-reduced-motion.
+ */
+function useFollow(log: unknown) {
+	const ref = useRef<HTMLOListElement>(null);
+	const pinned = useRef(true);
+	const top = useRef(0);
+	useLayoutEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		if (pinned.current) el.scrollTo({ top: el.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+		// After a shorter log (Undo) the browser has already clamped the position: that is not the reader scrolling up.
+		top.current = el.scrollTop;
+	}, [log]);
+	const onScroll = () => {
+		const el = ref.current;
+		if (!el) return;
+		// Only a move up unpins: our own smooth scroll moves down, so it never looks like the reader reading back.
+		if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) pinned.current = true;
+		else if (el.scrollTop < top.current) pinned.current = false;
+		top.current = el.scrollTop;
+	};
+	return { ref, onScroll };
 }
 
 /** Everything the trainer keeps between renders. `sc` + `key` say which exercise the run belongs to. */
@@ -191,6 +217,7 @@ export default function Trainer<S>({ lang, scenario: sc, items, groups, label, h
 	const goals = goalsOf(sc, run.state);
 	const done = complete(sc, run.state);
 	const globals = sc.actions?.(run.state) ?? [];
+	const follow = useFollow(run.log);
 
 	/** A verb's button, with its options in a fieldset named after the verb. */
 	const verbUI = (item: string, v: Verb<S>) => {
@@ -300,7 +327,7 @@ export default function Trainer<S>({ lang, scenario: sc, items, groups, label, h
 					<p className="sr-only" role="status">
 						{ses.said.text + (ses.said.n % 2 ? ' ' : '')}
 					</p>
-					<ol className="ck-tr-log" aria-live="polite" aria-label={t.trainerConsole}>
+					<ol className="ck-tr-log" aria-live="polite" aria-label={t.trainerConsole} ref={follow.ref} onScroll={follow.onScroll}>
 						{run.log.length === 0 && <li className="is-info">{startHint ?? t.trainerEmpty}</li>}
 						{run.log.slice(-lines).map((l, i) => (
 							<li key={Math.max(0, run.log.length - lines) + i} className={`is-${l.kind}`} data-ref={l.ref}>

@@ -174,7 +174,9 @@ tree items.
   window = course `body(item)` + status (`statusText` override) + badge + reasons + verbs (a verb with options = a
   `<fieldset>` with a visually hidden `<legend>`, its inputs and its button) + last result; under the map: global
   actions, progress (`progressText` override), goals, completion message, Undo / Start over (disabled without acts) /
-  Restore (after Start over, until the next act), notice about a stale stored run, console. Live regions: the console
+  Restore (after Start over, until the next act), notice about a stale stored run, console (the newest `lines`, default
+  40; it scrolls to the newest line on every change, smoothly unless prefers-reduced-motion, and stays put once the
+  reader scrolls up, until they scroll back to the bottom: `useFollow`, v0.7.1). Live regions: the console
   (`aria-live=polite`) and one sr-only `role=status` (Undone / Started over / Restored / complete); the window's
   result is not live. `items` may be a function of the state.
 - Persistence: per page and exercise (`trainerKey(location.pathname, scenario.id)`, store.ts guards blocked storage),
@@ -260,6 +262,8 @@ find at most `giveawayLimit` = floor(n/3), min 1, answers per quiz.
       `trainer` (toy house scenario, also the core's test subject); vulkan_en ObjectGraph build mode ported
 - [x] Trainers API v0.7.0 (review of v0.6.0): StaleAct, scenario version, option kinds, global actions, items from the
       state, badge, consistency(), single live console + status, Restore, scoped Escape, theme contract with one :root
+- [x] v0.7.1: the trainer console follows its newest line (it stayed at the top once it overflowed; vulkan_en worked
+      around it with `lines={8}`)
 - [ ] Trainers: next scenarios in vulkan_en (frame assembly with fences/semaphores, barriers, image layouts, descriptor
       wiring, pipeline creation); if one needs a non-tree board (timeline lanes), extend Trainer with a second view
       instead of forking it
