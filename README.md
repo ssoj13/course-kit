@@ -1,7 +1,7 @@
 # course-kit
 
 The engine behind interactive [Starlight](https://starlight.astro.build) textbooks such as
-[Vulkan from Zero](https://ssoj13.github.io/vulkan-course/). A course repository keeps only its content (MDX lessons,
+[Vulkan from Zero](https://ssoj13.github.io/course_vulkan/). A course repository keeps only its content (MDX lessons,
 its own widgets) and two JSON manifests. course-kit turns them into a full site:
 
 - **Sidebar and numbering from `course.json`.** Modules and lessons get global numbers. Generated pages cover module
